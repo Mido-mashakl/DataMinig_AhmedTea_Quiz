@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Mining Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Special+Elite&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --board: #1a3a2a;
+    --board-dark: #122a1e;
+    --chalk: #f0ede4;
+    --chalk-dim: #c8c4b0;
+    --chalk-faint: #8a8678;
+    --green-bright: #4ade80;
+    --red-bright: #f87171;
+    --yellow-bright: #fde68a;
+    --blue-bright: #93c5fd;
+    --orange-bright: #fdba74;
+    --chalk-line: rgba(240,237,228,0.12);
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--board-dark);
+    font-family: 'Kalam', cursive;
+    color: var(--chalk);
+    overflow-x: hidden;
+  }
+
+  .board-texture {
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        var(--chalk-line) 39px,
+        var(--chalk-line) 40px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 79px,
+        rgba(240,237,228,0.04) 79px,
+        rgba(240,237,228,0.04) 80px
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .chalk-dust {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 80%, rgba(240,237,228,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(240,237,228,0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .frame {
+    position: fixed;
+    inset: 0;
+    border: 14px solid #3d2b1f;
+    box-shadow: inset 0 0 0 4px #5a3e2b, inset 0 0 80px rgba(0,0,0,0.6), 0 0 0 2px #2a1e15;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .tray {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 28px;
+    background: linear-gradient(180deg, #3d2b1f 0%, #2a1e15 100%);
+    border-top: 4px solid #5a3e2b;
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    gap: 8px;
+    z-index: 101;
+  }
+
+  .chalk-piece {
+    width: 40px; height: 10px;
+    border-radius: 3px;
+    opacity: 0.8;
+  }
+
+  .eraser {
+    width: 50px; height: 18px;
+    background: #8B6914;
+    border-radius: 3px;
+    border: 1px solid #6B4F10;
+    margin-left: auto;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px 60px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; width: 100%; max-width: 820px; }
+  .screen.active { display: block; }
+
+  /* HOME SCREEN */
+  .home-title {
+    font-family: 'Special Elite', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    text-align: center;
+    color: var(--chalk);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 30px rgba(240,237,228,0.15);
+    margin-bottom: 0.3em;
+    letter-spacing: 2px;
+  }
+
+  .home-subtitle {
+    font-family: 'Caveat', cursive;
+    font-size: 1.4rem;
+    text-align: center;
+    color: var(--chalk-dim);
+    margin-bottom: 3rem;
+  }
+
+  .chalk-line-decor {
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--chalk-dim), transparent);
+    opacity: 0.4;
+    margin: 1.5rem 0;
+  }
+
+  .lecture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 2rem;
+  }
+
+  .lecture-card {
+    border: 2px solid rgba(240,237,228,0.2);
+    border-radius: 4px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: rgba(240,237,228,0.03);
+    text-align: center;
+  }
+
+  .lecture-card:hover {
+    border-color: rgba(240,237,228,0.5);
+    background: rgba(240,237,228,0.07);
+    transform: translateY(-2px);
+  }
+
+  .lecture-card .num {
+    font-family: 'Special Elite', serif;
+    font-size: 2rem;
+    color: var(--yellow-bright);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .lecture-card .lec-title {
+    font-size: 0.95rem;
+    color: var(--chalk-dim);
+    line-height: 1.4;
+  }
+
+  .lecture-card .q-count {
+    font-size: 0.8rem;
+    color: var(--chalk-faint);
+    margin-top: 8px;
+  }
+
+  .settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 20px;
+    border: 1px dashed rgba(240,237,228,0.2);
+    border-radius: 4px;
+  }
+
+  .setting-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .setting-label {
+    font-size: 0.85rem;
+    color: var(--chalk-faint);
+    font-family: 'Caveat', cursive;
+    letter-spacing: 1px;
+  }
+
+  .chalk-select {
+    background: rgba(240,237,228,0.08);
+    border: 1px solid rgba(240,237,228,0.3);
+    border-radius: 3px;
+    color: var(--chalk);
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .chalk-select option { background: #1a3a2a; }
+
+  .start-btn {
+    display: block;
+    margin: 0 auto;
+    font-family: 'Special Elite', serif;
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    color: var(--board);
+    background: var(--chalk);
+    border: none;
+    padding: 14px 50px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0 rgba(240,237,228,0.3);
+  }
+
+  .start-btn:hover {
+    transform: translate(-2px,-2px);
+    box-shadow: 6px 6px 0 rgba(240,237,228,0.3);
+  }
+
+  .start-btn:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(240,237,228,0.3); }
+
+  /* QUIZ SCREEN */
+  .quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .quiz-meta {
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    color: var(--chalk-dim);
+  }
+
+  .score-display {
+    font-family: 'Special Elite', serif;
+    font-size: 1.2rem;
+    color: var(--yellow-bright);
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: rgba(240,237,228,0.1);
+    border-radius: 3px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-bright), var(--blue-bright));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .question-box {
+    border: 2px solid rgba(240,237,228,0.25);
+    border-radius: 4px;
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    background: rgba(240,237,228,0.04);
+    min-height: 120px;
+    position: relative;
+  }
+
+  .section-badge {
+    position: absolute;
+    top: -12px; left: 20px;
+    background: var(--board-dark);
+    padding: 2px 10px;
+    font-family: 'Caveat', cursive;
+    font-size: 0.8rem;
+    color: var(--chalk-faint);
+    border: 1px solid rgba(240,237,228,0.2);
+    border-radius: 2px;
+  }
+
+  .question-text {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--chalk);
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  @media(max-width: 550px) { .options-grid { grid-template-columns: 1fr; } }
+
+  .option-btn {
+    background: rgba(240,237,228,0.05);
+    border: 1.5px solid rgba(240,237,228,0.2);
+    border-radius: 4px;
+    padding: 14px 16px;
+    color: var(--chalk);
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    background: rgba(240,237,228,0.1);
+    border-color: rgba(240,237,228,0.4);
+    transform: translateX(2px);
+  }
+
+  .option-btn.correct {
+    background: rgba(74,222,128,0.12);
+    border-color: var(--green-bright);
+    color: var(--green-bright);
+  }
+
+  .option-btn.wrong {
+    background: rgba(248,113,113,0.12);
+    border-color: var(--red-bright);
+    color: var(--red-bright);
+    text-decoration: line-through;
+    text-decoration-color: rgba(248,113,113,0.5);
+  }
+
+  .option-btn.reveal {
+    background: rgba(74,222,128,0.06);
+    border-color: rgba(74,222,128,0.3);
+    color: var(--green-bright);
+  }
+
+  .option-letter {
+    font-family: 'Special Elite', serif;
+    margin-right: 8px;
+    font-size: 1.1rem;
+  }
+
+  .explanation-box {
+    border-left: 3px solid var(--yellow-bright);
+    padding: 14px 18px;
+    background: rgba(253,230,138,0.06);
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    color: var(--chalk-dim);
+    line-height: 1.6;
+    display: none;
+  }
+
+  .explanation-box.show { display: block; }
+  .expl-label { font-family: 'Caveat', cursive; color: var(--yellow-bright); font-size: 1rem; margin-bottom: 6px; }
+
+  .quiz-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .chalk-btn {
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    border: 1.5px solid rgba(240,237,228,0.3);
+    background: transparent;
+    color: var(--chalk);
+    padding: 10px 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 1px;
+  }
+
+  .chalk-btn:hover { background: rgba(240,237,228,0.1); border-color: rgba(240,237,228,0.5); }
+  .chalk-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chalk-btn.primary { border-color: var(--blue-bright); color: var(--blue-bright); }
+  .chalk-btn.primary:hover { background: rgba(147,197,253,0.1); }
+
+  /* RESULT SCREEN */
+  .result-center { text-align: center; padding: 40px 20px; }
+
+  .result-grade {
+    font-family: 'Special Elite', serif;
+    font-size: 6rem;
+    line-height: 1;
+    margin-bottom: 0.2em;
+    display: block;
+  }
+
+  .result-message {
+    font-family: 'Caveat', cursive;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .result-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+  }
+
+  .stat-block { text-align: center; }
+  .stat-num { font-family: 'Special Elite', serif; font-size: 2.5rem; display: block; }
+  .stat-lbl { font-size: 0.85rem; color: var(--chalk-faint); font-family: 'Caveat', cursive; }
+
+  .result-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 2rem; }
+
+  .tick-cross {
+    display: inline-block;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    text-align: center;
+    line-height: 24px;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .tick-cross.ok { background: rgba(74,222,128,0.2); color: var(--green-bright); }
+  .tick-cross.no { background: rgba(248,113,113,0.2); color: var(--red-bright); }
+
+  .review-item {
+    border-bottom: 1px dashed rgba(240,237,228,0.1);
+    padding: 14px 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .review-q { font-size: 0.95rem; line-height: 1.5; flex: 1; }
+  .review-ans { font-size: 0.85rem; color: var(--chalk-faint); margin-top: 4px; font-family: 'Caveat', cursive; }
+
+  .timer-display {
+    font-family: 'Special Elite', serif;
+    font-size: 1rem;
+    color: var(--orange-bright);
+    min-width: 60px;
+    text-align: right;
+  }
+
+  .timer-display.warn { color: var(--red-bright); animation: pulse 0.8s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .q-shuffle-label {
+    font-family: 'Caveat', cursive;
+    font-size: 0.85rem;
+    color: var(--chalk-faint);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .all-lec-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    color: var(--blue-bright);
+    border: 1.5px dashed rgba(147,197,253,0.4);
+    background: rgba(147,197,253,0.04);
+    padding: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .all-lec-btn:hover { background: rgba(147,197,253,0.1); border-color: rgba(147,197,253,0.6); }
+</style>
+</head>
+<body>
+
+<div class="board-texture"></div>
+<div class="chalk-dust"></div>
+<div class="frame"></div>
+<div class="tray">
+  <div class="chalk-piece" style="background:#f0ede4;"></div>
+  <div class="chalk-piece" style="background:#fde68a;"></div>
+  <div class="chalk-piece" style="background:#93c5fd;"></div>
+  <div class="chalk-piece" style="background:#f0ede4; width:25px;"></div>
+  <div class="eraser"></div>
+</div>
+
+<div class="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="home-title">📚 Data Mining - AhmedTea☕ edition</div>
+    <div class="home-subtitle">Interactive Question Bank — All Lectures</div>
+    <div class="chalk-line-decor"></div>
+
+    <div class="lecture-grid" id="lecture-grid"></div>
+
+    <button class="all-lec-btn" onclick="selectAll()">✦ Mix all lectures together</button>
+
+    <div class="chalk-line-decor"></div>
+
+    <div class="settings-row">
+      <div class="setting-group">
+        <span class="setting-label">QUESTIONS</span>
+        <select class="chalk-select" id="sel-count">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="30" selected>30</option>
+          <option value="50">50</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <span class="setting-label">TIMER</span>
+        <select class="chalk-select" id="sel-timer">
+          <option value="0">No timer</option>
+          <option value="30">30 sec / Q</option>
+          <option value="60" selected>60 sec / Q</option>
+          <option value="90">90 sec / Q</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <span class="setting-label">ORDER</span>
+        <select class="chalk-select" id="sel-order">
+          <option value="random" selected>Shuffled</option>
+          <option value="order">In Order</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startQuiz()">Start Quiz</button>
+    <div class="q-shuffle-label" id="selected-label">Select a lecture above, or mix all</div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="screen-quiz">
+    <div class="quiz-header">
+      <div class="quiz-meta" id="quiz-meta">Question 1 / 30</div>
+      <div class="score-display" id="score-display">Score: 0</div>
+      <div class="timer-display" id="timer-display"></div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="question-box">
+      <div class="section-badge" id="q-section-badge">Section 1</div>
+      <div class="question-text" id="question-text">Loading...</div>
+    </div>
+
+    <div class="options-grid" id="options-grid"></div>
+
+    <div class="explanation-box" id="explanation-box">
+      <div class="expl-label">✎ Explanation</div>
+      <div id="explanation-text"></div>
+    </div>
+
+    <div class="quiz-footer">
+      <button class="chalk-btn" onclick="goHome()">← Back</button>
+      <div style="font-family:'Caveat',cursive; font-size:0.9rem; color:var(--chalk-faint);" id="streak-display"></div>
+      <button class="chalk-btn primary" id="next-btn" onclick="nextQuestion()" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="screen-result">
+    <div class="result-center">
+      <span class="result-grade" id="result-grade">A+</span>
+      <div class="result-message" id="result-message">Excellent work!</div>
+      <div class="result-stats">
+        <div class="stat-block">
+          <span class="stat-num" id="r-correct" style="color:var(--green-bright)">0</span>
+          <span class="stat-lbl">Correct</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num" id="r-wrong" style="color:var(--red-bright)">0</span>
+          <span class="stat-lbl">Wrong</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num" id="r-pct" style="color:var(--yellow-bright)">0%</span>
+          <span class="stat-lbl">Score</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num" id="r-time" style="color:var(--blue-bright)">0s</span>
+          <span class="stat-lbl">Avg time/Q</span>
+        </div>
+      </div>
+      <div class="result-btns">
+        <button class="chalk-btn primary" onclick="retryQuiz()">↺ Retry</button>
+        <button class="chalk-btn" onclick="goHome()">⌂ Home</button>
+        <button class="chalk-btn" onclick="showReview()">☑ Review Answers</button>
+      </div>
+    </div>
+    <div id="review-section" style="display:none; margin-top:2rem;"></div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  // --- LECTURE 1 ---
+  {lec:1,sec:"Section 1: Basic Definitions",q:"What has been the primary driver for the development of data mining?",opts:["The decrease in global data storage","The explosive growth of data from terabytes to petabytes","The replacement of digital systems with manual records","A lack of automated data collection tools"],ans:1,exp:"Data mining emerged because data has grown exponentially, moving from terabytes to petabytes, requiring new analysis methods."},
+  {lec:1,sec:"Section 1: Basic Definitions",q:"Which is described as a major scientific source of abundant data?",opts:["Social media and news","E-commerce and stocks","Remote sensing and bioinformatics","Personal digital cameras"],ans:2,exp:"Remote sensing and bioinformatics are specifically cited as scientific sources of data."},
+  {lec:1,sec:"Section 1: Basic Definitions",q:"What does 'Drowning in data, but starving for knowledge' imply?",opts:["We have too little data to make decisions.","There is a surplus of data but a lack of tools to extract useful knowledge from it.","Knowledge is easier to find than data.","All data is automatically considered knowledge."],ans:1,exp:"This phrase highlights the gap between having massive amounts of raw data and the ability to turn it into actionable knowledge."},
+  {lec:1,sec:"Section 1: Basic Definitions",q:"Data mining is the automated analysis of ________.",opts:["Small, manual datasets","Massive datasets","Only handwritten documents","Encrypted emails only"],ans:1,exp:"By definition, data mining involves the automated analysis of massive or large-scale datasets."},
+  {lec:1,sec:"Section 1: Basic Definitions",q:"What is the search for hidden relationships and global patterns in large databases called?",opts:["Data entry","Data mining","Data networking","Data deletion"],ans:1,exp:"Data mining is specifically defined as the search for patterns and relationships that are 'hidden' within vast amounts of data."},
+  {lec:1,sec:"Section 2: KDD Process",q:"What is the popularly used alternative name for Data Mining?",opts:["Data Warehousing","Knowledge Discovery in Databases (KDD)","Database Management Systems (DBMS)","Information Technology (IT)"],ans:1,exp:"Many professionals use 'Knowledge discovery in databases' or KDD as a synonym for data mining."},
+  {lec:1,sec:"Section 2: KDD Process",q:"Which step is considered the 'core' or heart of the knowledge discovery process?",opts:["Data cleaning","Data selection","Data mining","Pattern evaluation"],ans:2,exp:"Although there are many steps in the KDD process, data mining is the essential core step where patterns are actually extracted."},
+  {lec:1,sec:"Section 2: KDD Process",q:"What is the purpose of 'Data Cleaning' in the KDD process?",opts:["To combine multiple data sources","To remove noise and inconsistent data","To visualize the final results","To transform data into new formats"],ans:1,exp:"Data cleaning is the first step, aimed at removing errors ('noise') and data that does not stay consistent."},
+  {lec:1,sec:"Section 2: KDD Process",q:"'Data Integration' involves which of the following?",opts:["Deleting irrelevant data","Combining multiple data sources","Searching for patterns","Creating charts and graphs"],ans:1,exp:"Data integration is the process where multiple sources of data are merged together for analysis."},
+  {lec:1,sec:"Section 2: KDD Process",q:"Which step retrieves only the data relevant to the specific mining task?",opts:["Data transformation","Data selection","Pattern evaluation","Knowledge presentation"],ans:1,exp:"Data selection is used to retrieve specific data that is relevant to the analysis task at hand."},
+  {lec:1,sec:"Section 2: KDD Process",q:"What happens during 'Data Transformation'?",opts:["Data is visualized in 3D.","Data is converted into forms appropriate for mining.","Noisy data is removed.","The final knowledge is presented to the user."],ans:1,exp:"This step ensures the data is in the right format or structure to be processed by data mining algorithms."},
+  {lec:1,sec:"Section 2: KDD Process",q:"Steps 1 through 4 of the Knowledge Process are collectively known as:",opts:["Knowledge presentation","Data preprocessing","Data mining engine","Pattern recognition"],ans:1,exp:"Data cleaning, integration, selection, and transformation are all parts of the 'preprocessing' phase."},
+  {lec:1,sec:"Section 2: KDD Process",q:"What is the goal of 'Pattern Evaluation'?",opts:["To store the data in a warehouse","To identify truly interesting patterns representing knowledge","To merge different databases","To collect data from the web"],ans:1,exp:"Pattern evaluation uses 'interestingness measures' to decide which discovered patterns are actually useful knowledge."},
+  {lec:1,sec:"Section 2: KDD Process",q:"In which step are visualization and knowledge representation techniques used?",opts:["Data transformation","Data mining","Knowledge presentation","Data integration"],ans:2,exp:"This is the final step where the extracted knowledge is shown to the user using visual tools."},
+  {lec:1,sec:"Section 3: System Architecture",q:"Which component is responsible for performing the actual mining tasks?",opts:["User interface","Pattern evaluation model","Data mining engine","Database server"],ans:2,exp:"The 'data mining engine' is the functional part of the architecture that handles the discovery of patterns."},
+  {lec:1,sec:"Section 3: System Architecture",q:"Which of the following is NOT a major component of a typical data mining system architecture?",opts:["Data mining engine","User interface","Pattern evaluation model","Manual data entry clerk"],ans:3,exp:"The architecture includes repositories, servers, engines, evaluation models, and user interfaces — not manual clerks."},
+  {lec:1,sec:"Section 3: System Architecture",q:"What is the role of the 'User Interface' in the system architecture?",opts:["To clean the data","To communicate between users and the data mining system","To store historical records","To integrate multiple databases"],ans:1,exp:"The user interface allows the user to interact with the system, specify queries, and view results."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"A Data Warehouse is described as a store of data that is:",opts:["Inconsistent and temporary","Single, complete, and consistent","Only used for daily transactions","Scattered across many different formats"],ans:1,exp:"A data warehouse provides a unified and consistent store of data from various sources."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"What is the primary purpose of a Data Warehouse?",opts:["To replace the internet","To support decision-making applications","To delete old customer records","To speed up website loading times"],ans:1,exp:"Data warehouses are created specifically to support applications that help managers and organizations make decisions."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"How is a Data Warehouse maintained relative to an organization's operational database?",opts:["They are the same database.","It is maintained separately from the operational database.","It is only updated once every ten years.","It is stored on the user's personal computer."],ans:1,exp:"A data warehouse is a historical database that is kept separate from the databases used for daily operations."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"What is 'Data Warehousing'?",opts:["The process of deleting data","The process of constructing and using data warehouses","A method for building websites","The same thing as data mining"],ans:1,exp:"Data warehousing refers to the entire lifecycle of extracting, transforming, loading, and using a data warehouse."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"What is the main function of Data Mining compared to Warehousing?",opts:["Warehousing finds patterns; Mining stores data.","Mining is used for models and forecasting; Warehousing is for extracting, cleaning, and storing.","There is no difference between them.","Mining is for small data; Warehousing is for large data."],ans:1,exp:"Data mining focuses on analysis and prediction (models/forecasting), while warehousing focuses on the process of preparing and storing data."},
+  {lec:1,sec:"Section 4: Data Warehousing",q:"Data transfer from the operational database to the warehouse is:",opts:["A one-time event","An ongoing process","Done manually by hand","Not necessary"],ans:1,exp:"The transfer of data to the warehouse is a continuous and ongoing process to keep the warehouse updated."},
+  {lec:1,sec:"Section 5: Applications",q:"In market analysis, what does CRM stand for?",opts:["Computer Resource Management","Customer Relationship Management","Corporate Risk Modeling","Customer Revenue Mining"],ans:1,exp:"CRM is a major application of data mining within market analysis and management."},
+  {lec:1,sec:"Section 5: Applications",q:"Which application helps identify which items customers tend to purchase together?",opts:["Fraud detection","Market basket analysis","Text mining","Quality control"],ans:1,exp:"Market basket analysis is used to find associations between products purchased by customers."},
+  {lec:1,sec:"Section 5: Applications",q:"How does data mining help in 'Fraud detection'?",opts:["By analyzing standard sales trends","By identifying unusual patterns (outliers)","By increasing the price of goods","By deleting customer transaction history"],ans:1,exp:"Detecting fraud involves looking for 'outliers', which are patterns that deviate significantly from the norm."},
+  {lec:1,sec:"Section 5: Applications",q:"Which is an application of data mining in science?",opts:["Market segmentation","Bioinformatics and bio-data analysis","Customer retention","Target marketing"],ans:1,exp:"Bioinformatics is a key scientific field that utilizes data mining for biological data analysis."},
+  {lec:1,sec:"Section 5: Applications",q:"Analyzing newsgroups, emails, and documents is specifically referred to as:",opts:["Web mining","Text mining","Stream data mining","Database mining"],ans:1,exp:"Text mining involves extracting knowledge from unstructured text sources like emails and documents."},
+  {lec:1,sec:"Section 5: Applications",q:"Risk analysis and management includes which of the following?",opts:["Forecasting and competitive analysis","Cleaning noisy data","Building a data warehouse","Writing new database code"],ans:0,exp:"Forecasting and competitive analysis are part of the risk management applications of data mining."},
+  {lec:1,sec:"Section 5: Applications",q:"Data mining is a process that employs ________ to automatically extract knowledge.",opts:["Manual sorting techniques","Computer learning techniques","Physical filing systems","Human memory"],ans:1,exp:"Data mining relies on computer learning techniques to automatically analyze and extract knowledge from databases."},
+
+  // --- LECTURE 2 ---
+  {lec:2,sec:"Section 1: Data Science",q:"Data Science uses a combination of which fields to collect and analyze data?",opts:["Biology and History only","Computer science, statistics, machine learning, and visualization","Only manual data entry and filing","Graphic design and marketing"],ans:1,exp:"Data Science is an interdisciplinary field that integrates computer science, statistics, machine learning, and human-computer interactions."},
+  {lec:2,sec:"Section 1: Data Science",q:"What is the ultimate goal of the Data Science process?",opts:["To delete old data","To create data products","To increase data noise","To avoid using statistics"],ans:1,exp:"Data Science uses various techniques to clean, integrate, and analyze data specifically to create 'data products'."},
+  {lec:2,sec:"Section 1: Data Science",q:"Which best describes the relationship between Data Science and Data Mining?",opts:["Data Mining is an umbrella that includes Data Science.","Data Science is an umbrella that includes Data Mining.","They are completely separate fields.","They are exactly the same thing."],ans:1,exp:"Data Science is described as an 'umbrella' of several techniques, and Data Mining is only a part of it."},
+  {lec:2,sec:"Section 1: Data Science",q:"Which fields are identified as the mainly related areas to Data Science?",opts:["Economics and Sociology","Physics and Chemistry","Artificial intelligence, machine learning, and data mining","Music and Art"],ans:2,exp:"These three areas are the primary technical fields associated with the broader scope of Data Science."},
+  {lec:2,sec:"Section 2: Feasibility",q:"Before starting a Data Mining project, what must be clearly defined?",opts:["The company logo","The problem","The employee names","The office layout"],ans:1,exp:"One of the first questions to ask is 'Can we clearly define the problem?' to ensure the mining task has a purpose."},
+  {lec:2,sec:"Section 2: Feasibility",q:"Data Mining is most useful when the data contains:",opts:["Hidden knowledge","Information for reporting purposes only","Only basic facts","Random noise"],ans:0,exp:"If data is only useful for basic reporting, data mining may not be necessary; its value lies in uncovering 'hidden knowledge'."},
+  {lec:2,sec:"Section 2: Feasibility",q:"From a business perspective, Data Mining should only be applied if:",opts:["It is the most expensive option.","The cost of processing is less than the likely increase in profit.","It takes ten years to complete.","The data is completely empty."],ans:1,exp:"Feasibility depends on whether the potential knowledge gained will provide a profit that outweighs the processing costs."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"Which is considered an 'Advanced database or information repository'?",opts:["A simple Excel sheet","A paper notebook","Spatial and temporal data","A dictionary"],ans:2,exp:"Advanced repositories include complex data types like spatial, temporal, stream, and multimedia data."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"Analyzing the World Wide Web (WWW) falls under which data category?",opts:["Transactional database","Text databases","Simple Relational database","Facts only"],ans:1,exp:"Text databases and the WWW are listed together as sources for advanced data mining."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"How many 'Levels of Learning' are identified?",opts:["Two","Three","Four","Five"],ans:2,exp:"The four levels are Facts, Concepts, Procedures, and Principles."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"Which level of learning is defined as 'simple statements of truth'?",opts:["Concepts","Facts","Procedures","Principles"],ans:1,exp:"Facts are the most basic level of learning and represent direct truths."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"A set of objects grouped together because they share common characteristics is a:",opts:["Fact","Concept","Procedure","Principle"],ans:1,exp:"Concepts involve categorization based on shared symbols or attributes."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"A 'step-by-step action to achieve a goal' describes which level?",opts:["Principle","Fact","Procedure","Concept"],ans:2,exp:"Procedures are methodological and sequential actions taken to reach a specific outcome."},
+  {lec:2,sec:"Section 3: Kinds of Data",q:"What are 'Principles'?",opts:["Random guesses","General truths or laws that are basic to other truths","Small pieces of noise","Lists of names"],ans:1,exp:"Principles represent the highest level of learning, serving as foundational laws for other knowledge."},
+  {lec:2,sec:"Section 4: Learning Methods",q:"Which method uses models to identify objects of similar structure and determine outcomes?",opts:["Unsupervised Learning","Supervised Learning","Random Learning","Manual Learning"],ans:1,exp:"Supervised learning relies on previously developed models to classify or predict new data."},
+  {lec:2,sec:"Section 4: Learning Methods",q:"Unsupervised Learning builds models from data ________.",opts:["With predefined classes","Without predefined classes","Using only paper records","By asking the user for the answer first"],ans:1,exp:"Unlike supervised learning, unsupervised learning discovers patterns in data that has not been labeled or categorized beforehand."},
+  {lec:2,sec:"Section 4: Learning Methods",q:"In the disease diagnosis example, the 'Training Data' is used for:",opts:["Unsupervised learning","Supervised learning (to teach the model)","Deleting patient records","Designing the hospital"],ans:1,exp:"Training data with known diagnoses is used to train a model to predict unknown cases."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"Data Mining tasks are generally divided into which two categories?",opts:["Fast and Slow","Predictive and Descriptive","Easy and Hard","Old and New"],ans:1,exp:"The major split in data mining functionality is between predicting future values and describing current data patterns."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"Which of the following is a 'Predictive' method?",opts:["Clustering","Association Rules","Classification","Summarization"],ans:2,exp:"Classification is predictive because it learns from pre-labeled instances to predict the class of a new instance."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"What is the goal of 'Regression'?",opts:["To group people together","To predict a continuous attribute","To find shopping rules","To clean the database"],ans:1,exp:"Regression is a predictive task aimed at determining a continuous numerical value."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"'Clustering' is categorized as a ________ method.",opts:["Predictive","Descriptive","Statistical only","Procedural"],ans:1,exp:"Clustering is descriptive because it finds 'natural' groupings in data without trying to predict a specific label."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"Which method finds 'natural' groupings of instances given unlabeled data?",opts:["Classification","Regression","Clustering","Sequence Discovery"],ans:2,exp:"Clustering groups similar items together based solely on their inherent characteristics."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"'Association Rules' are used for:",opts:["Predicting the weather","Discovering interesting relations between variables in large DBs","Deleting duplicate data","Identifying simple facts"],ans:1,exp:"This descriptive method looks for patterns such as 'If a customer buys X, they also buy Y'."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"Which of these is NOT a predictive task?",opts:["Time Series Analysis","Classification","Summarization","Prediction"],ans:2,exp:"Summarization is a descriptive task aimed at providing a compact description of the data."},
+  {lec:2,sec:"Section 5: Mining Tasks",q:"Sequence Discovery is a type of ________ method.",opts:["Predictive","Descriptive","Administrative","Preliminary"],ans:1,exp:"Sequence discovery describes patterns over time or in a specific order within the data."},
+  {lec:2,sec:"Section 6: General Review",q:"According to the architecture diagram, what is the largest circle that encompasses everything?",opts:["Machine Learning","Data Mining","Computer Science","AI"],ans:2,exp:"Computer Science is shown as the broad field containing Data Science and its subfields."},
+  {lec:2,sec:"Section 6: General Review",q:"What is the relationship between AI and Machine Learning?",opts:["AI is part of Machine Learning.","Machine Learning is part of AI.","They are completely unrelated.","They are the same as Data Mining."],ans:1,exp:"The diagram shows Machine Learning as a subset of Artificial Intelligence."},
+  {lec:2,sec:"Section 6: General Review",q:"In Table 1.1, 'Sore Throat,' 'Fever,' and 'Diagnosis' are examples of:",opts:["Procedures","Attributes/Features used for Classification","Unsupervised data","Principles"],ans:1,exp:"These are the variables used to determine the diagnostic outcome in a supervised classification task."},
+  {lec:2,sec:"Section 6: General Review",q:"If you have data with an 'Unknown Classification' (like Table 1.2), you are trying to:",opts:["Use a model to determine the outcome","Delete the data","Write a new principle","Create a concept"],ans:0,exp:"The goal is to apply the learned model from the training data to predict the missing diagnosis."},
+  {lec:2,sec:"Section 6: General Review",q:"Which task is specifically highlighted for discovering relations between variables?",opts:["Regression","Association Rules","Time Series","Facts"],ans:1,exp:"Association Rules are the primary descriptive method for finding interesting correlations between variables."},
+
+  // --- LECTURE 3 ---
+  {lec:3,sec:"Section 1: Basic Concepts",q:"What is the main process of clustering?",opts:["Predicting future values based on a training dataset","Grouping data objects based on their high similarity","Assigning predefined labels to new data instances","Reducing the number of attributes in a database"],ans:1,exp:"Clustering groups data so that objects in the same group are very similar, while objects in different groups are dissimilar."},
+  {lec:3,sec:"Section 1: Basic Concepts",q:"Which is an alternative name for cluster analysis?",opts:["Data warehousing","Data segmentation","Linear regression","Feature selection"],ans:1,exp:"Cluster analysis is often referred to as data segmentation or exploratory data analysis."},
+  {lec:3,sec:"Section 1: Basic Concepts",q:"In a high-quality clustering result, objects within a cluster have:",opts:["High similarity","Low similarity","Zero similarity","Random similarity"],ans:0,exp:"The goal of clustering is to ensure that objects within the same cluster are highly related or similar to one another."},
+  {lec:3,sec:"Section 1: Basic Concepts",q:"Similarities and dissimilarities in clustering are usually assessed using:",opts:["User opinions","Distance measures","Random sampling","Boolean logic"],ans:1,exp:"Calculations for similarity often involve distance measures based on the attribute values of the objects."},
+  {lec:3,sec:"Section 1: Basic Concepts",q:"Why is clustering considered 'Unsupervised Learning'?",opts:["Because it requires a large training set","Because it lacks predefined class labels","Because it is used only for predictions","Because it is a simple manual process"],ans:1,exp:"Unlike supervised learning, clustering builds models from data without knowing the classes beforehand."},
+  {lec:3,sec:"Section 2: Clustering vs Classification",q:"Which task is specifically used for 'exploratory analysis' of data?",opts:["Classification","Clustering","Regression","Prediction"],ans:1,exp:"Clustering is used to explore data to find natural groupings, whereas classification is for predicting specific classes."},
+  {lec:3,sec:"Section 2: Clustering vs Classification",q:"Classification is considered ________ learning, while clustering is ________ learning.",opts:["Supervised; Unsupervised","Unsupervised; Supervised","Hybrid; Manual","Manual; Automatic"],ans:0,exp:"Classification uses pre-labeled data (supervised), while clustering finds relationships in unlabeled data (unsupervised)."},
+  {lec:3,sec:"Section 2: Clustering vs Classification",q:"Which of the following is true about 'Classification'?",opts:["It involves an unknown number of classes.","It is based on a training set.","It groups objects with no prior knowledge.","It is an exploratory data analysis method."],ans:1,exp:"Classification requires a training set to learn how to assign new observations to known classes."},
+  {lec:3,sec:"Section 2: Clustering vs Classification",q:"Clustering is used to ________ data, while classification is used to ________ future observations.",opts:["Store; Delete","Understand; Classify","Predict; Summarize","Clean; Transform"],ans:1,exp:"Clustering helps understand the structure of data, while classification applies that knowledge to label new data points."},
+  {lec:3,sec:"Section 3: Clustering Approaches",q:"Which of these is a 'Major Clustering Approach'?",opts:["Model-based clustering","Partitioning methods","Density-based clustering","Fuzzy logic rules"],ans:1,exp:"Partitioning and Hierarchical methods are categorized as major clustering approaches."},
+  {lec:3,sec:"Section 3: Clustering Approaches",q:"Which of the following is an 'Advanced Clustering Approach'?",opts:["K-means method","Fuzzy clustering","Medoids method","Hierarchical clustering"],ans:1,exp:"Advanced approaches include fuzzy, density-based, and model-based clustering."},
+  {lec:3,sec:"Section 3: Clustering Approaches",q:"Partitioning methods like k-means generally divide data into ________ groups.",opts:["Exactly two","K","Unlimited","Random"],ans:1,exp:"In partitioning methods, the user must specify 'k', the desired number of clusters."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"In the k-means algorithm, the cluster center is the:",opts:["Mean value","Random point","Farthest point","Median value"],ans:0,exp:"K-means uses the mean value of the objects in a cluster as the reference point or center."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"In the k-medoids algorithm, the center of a cluster is represented by:",opts:["The average of all points","An actual object","A theoretical point","The origin (0,0)"],ans:1,exp:"Unlike k-means, k-medoids picks actual objects from the dataset to represent the cluster centers."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"Which algorithm is more 'robust' in the presence of noise and outliers?",opts:["K-means","K-medoids","Linear Regression","Decision Trees"],ans:1,exp:"K-medoids is less influenced by extreme values because it uses actual objects as centers rather than averages."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"Why is k-medoids more robust than k-means?",opts:["It is faster.","A medoid is less influenced by outliers.","It uses fewer iterations than k-means.","It does not require a 'k' value."],ans:1,exp:"A mean (centroid) is heavily shifted by a single outlier, but a medoid (actual object) remains more stable."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"Compared to k-means, the k-medoids method is computationally:",opts:["More intensive","Less intensive","Exactly equal","Much simpler"],ans:0,exp:"K-medoids is much more costly than k-means because of the complexity of each iteration."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"K-medoids works effectively for ________ data sets.",opts:["Large","Small","Stream","Real-time"],ans:1,exp:"K-medoids is computationally intensive and thus works best for small data sets."},
+  {lec:3,sec:"Section 4: K-Means vs K-Medoids",q:"Both k-means and k-medoids require the user to specify:",opts:["The distance formula","The number of clusters","The training labels","The learning rate"],ans:1,exp:"Both methods require the user to define 'k' (the number of clusters) before processing."},
+  {lec:3,sec:"Section 5: K-Medoids Algorithm Details",q:"Which distance formula is demonstrated in the k-medoids example?",opts:["Euclidean distance","Manhattan distance","Cosine similarity","Hamming distance"],ans:1,exp:"The examples use Manhattan distance (absolute differences) to calculate costs."},
+  {lec:3,sec:"Section 5: K-Medoids Algorithm Details",q:"The k-medoids algorithm iteratively replaces a medoid with a non-medoid if it:",opts:["Increases the total distance","Improves the total distance","Increases the number of clusters","Makes the clusters larger"],ans:1,exp:"The algorithm searches for better medoids by swapping points to minimize the total distance (cost) of the clustering."},
+  {lec:3,sec:"Section 5: K-Medoids Algorithm Details",q:"In the k-medoids algorithm, if the swap cost 'S' is greater than 0 (S > 0):",opts:["The swap is performed.","The swap is rejected.","The algorithm stops.","The data is deleted."],ans:1,exp:"If S > 0, it means the total cost increased, so moving to the new point was a 'bad idea'."},
+  {lec:3,sec:"Section 6: Hard vs Soft Clustering",q:"In ________ clustering, an element belongs to exactly one cluster.",opts:["Soft","Hard","Density-based","Hierarchical"],ans:1,exp:"Hard clustering (like k-means) does not allow overlap; an object either is or is not in a specific cluster."},
+  {lec:3,sec:"Section 6: Hard vs Soft Clustering",q:"Soft clustering is also known as:",opts:["Boolean clustering","Fuzzy clustering","Rigid clustering","Manual clustering"],ans:1,exp:"Soft clustering allows for overlapping clusters where an object can belong to multiple groups."},
+  {lec:3,sec:"Section 6: Hard vs Soft Clustering",q:"In fuzzy clustering, a document can belong to:",opts:["Only one cluster","More than one cluster","No clusters at all","Only the largest cluster"],ans:1,exp:"In soft/fuzzy clustering, elements have membership levels and can belong to multiple clusters simultaneously."},
+  {lec:3,sec:"Section 7: General Review",q:"Which of the following is NOT a type of clustering?",opts:["Density-based","Hierarchical","Supervised labeling","Partitioning"],ans:2,exp:"Clustering is unsupervised by definition; supervised labeling is part of classification."},
+  {lec:3,sec:"Section 7: General Review",q:"K-medoids can work with ________ distance measure.",opts:["Only Manhattan","Any","Only Euclidean","No"],ans:1,exp:"Unlike k-means which typically uses Euclidean, k-medoids is flexible and can work with any distance measure."},
+  {lec:3,sec:"Section 7: General Review",q:"In the k-medoids example, clusters are formed based on:",opts:["Minimum cost","Maximum cost","Alpha-numeric order","Random selection"],ans:0,exp:"Points are assigned to the medoid that results in the minimum distance/cost."},
+  {lec:3,sec:"Section 7: General Review",q:"To find the degree of 'medoidness,' the point should have a total distance that is:",opts:["Less than others","More than others","Equal to zero","Twice the average"],ans:0,exp:"The medoid is the point where the total distance to all other points in the cluster is minimized."},
+  {lec:3,sec:"Section 7: General Review",q:"Which approach involves 'Model-based clustering'?",opts:["Major approach","Advanced approach","Manual approach","Preliminary approach"],ans:1,exp:"Model-based clustering is listed as an advanced clustering approach."},
+
+  // --- LECTURE 4 ---
+  {lec:4,sec:"Section 1: Basic Definitions",q:"What is the primary output of a hierarchical clustering method?",opts:["A single flat list","A tree of clusters","A linear regression","A set of random points"],ans:1,exp:"Hierarchical methods group data into a hierarchy or 'tree' structure."},
+  {lec:4,sec:"Section 1: Basic Definitions",q:"What does the 'root' of the hierarchical tree represent?",opts:["A single element","The whole input set","The first two clusters","A random noise point"],ans:1,exp:"In a dendrogram, the root represents the entire input set S."},
+  {lec:4,sec:"Section 1: Basic Definitions",q:"In a hierarchical tree, what are the 'leaves'?",opts:["Internal nodes","Individual elements","The final merged set","Pairwise matrices"],ans:1,exp:"The leaves of the tree are the individual elements of the set S."},
+  {lec:4,sec:"Section 1: Basic Definitions",q:"How are 'internal nodes' defined in a hierarchical tree?",opts:["As the root's parent","The union of children","As singleton sets only","As noise in the data"],ans:1,exp:"Internal nodes are formed by the union of their child nodes."},
+  {lec:4,sec:"Section 1: Basic Definitions",q:"What is the graphical representation of a hierarchy of clusters called?",opts:["Histogram","Dendrogram","Scatter plot","Pie chart"],ans:1,exp:"A dendrogram is the specific tree diagram used to show hierarchical clustering."},
+  {lec:4,sec:"Section 2: Agglomerative vs Divisive",q:"Which approach is known as the 'bottom-up' style?",opts:["Divisive","Agglomerative","Centroid-based","Density-based"],ans:1,exp:"Agglomerative clustering starts from the bottom (singletons) and moves up to the root."},
+  {lec:4,sec:"Section 2: Agglomerative vs Divisive",q:"Which approach is known as the 'top-down' style?",opts:["Agglomerative","Divisive","Partitioning","Sequential"],ans:1,exp:"Divisive clustering starts with the whole set and recursively partitions it downward."},
+  {lec:4,sec:"Section 2: Agglomerative vs Divisive",q:"Agglomerative clustering begins with which of the following?",opts:["Singletons","The root node","Two large groups","A distance matrix"],ans:0,exp:"This style starts with sets containing only one element, known as singletons."},
+  {lec:4,sec:"Section 2: Agglomerative vs Divisive",q:"Which hierarchical style is considered the 'most common'?",opts:["Divisive","Agglomerative","Model-based","Fuzzy"],ans:1,exp:"The sources state that the agglomerative approach is the most common one used."},
+  {lec:4,sec:"Section 2: Agglomerative vs Divisive",q:"What is the goal of the divisive clustering style?",opts:["Merging clusters","Partitioning the set","Finding the mean","Cleaning the data"],ans:1,exp:"Divisive clustering works by recursively partitioning the input set until singletons are reached."},
+  {lec:4,sec:"Section 3: Agglomerative Algorithm Steps",q:"What is the first input required for the agglomerative algorithm?",opts:["A dendrogram","A pairwise matrix","A target label","A cluster mean"],ans:1,exp:"Step 1 involves an input pairwise matrix of all instances in the set."},
+  {lec:4,sec:"Section 3: Agglomerative Algorithm Steps",q:"What does the algorithm initially create for every instance?",opts:["A shared parent","Its own cluster","A distant outlier","A merging cost"],ans:1,exp:"The algorithm starts by placing each instance in its own singleton cluster."},
+  {lec:4,sec:"Section 3: Agglomerative Algorithm Steps",q:"In Step 2, which two clusters are chosen for merging?",opts:["The two largest","The two closest","The two farthest","Two random ones"],ans:1,exp:"The algorithm computes a cost function to find the two closest clusters to merge."},
+  {lec:4,sec:"Section 3: Agglomerative Algorithm Steps",q:"After merging two clusters, what happens to the original clusters?",opts:["They are duplicated","They are removed","They become roots","They stay in the list"],ans:1,exp:"Once Si and Sj are merged into a new node, they are removed from the active list L."},
+  {lec:4,sec:"Section 3: Agglomerative Algorithm Steps",q:"When does the agglomerative algorithm stop?",opts:["After ten iterations","One set remains","Half are merged","Costs exceed zero"],ans:1,exp:"The process repeats until there is only one set (the root) left in the list."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"What defines the difference between single, complete, and average linkage?",opts:["Number of clusters","Merging cost method","Tree height limits","Input data size"],ans:1,exp:"These methods are distinguished by how they compute the distance (merging cost) in Step 2."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"Single-linkage clustering is also known as the ________ method.",opts:["Maximum","Minimum","Average","Diameter"],ans:1,exp:"Single-linkage is called the minimum method because it uses the shortest distance."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"Which method defines distance as the 'greatest' distance between members?",opts:["Single-linkage","Complete-linkage","Average-linkage","Medoid-linkage"],ans:1,exp:"Complete-linkage (maximum method) looks for the greatest distance between members of different clusters."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"Single-linkage considers the distance between clusters to be the ________.",opts:["Median distance","Shortest distance","Average distance","Squared distance"],ans:1,exp:"It looks for the smallest distance between any element in one cluster and any element in another."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"What is another name for complete-linkage clustering?",opts:["Minimum method","Diameter method","Connectedness","Mean method"],ans:1,exp:"Complete-linkage is also referred to as the diameter or maximum method."},
+  {lec:4,sec:"Section 4: Distance and Linkage",q:"In average-linkage, the distance is the ________ from members of one cluster to another.",opts:["Sum of costs","Average distance","Range of values","Mode distance"],ans:1,exp:"This method calculates the average of all distances between members of the two clusters."},
+  {lec:4,sec:"Section 5: Examples and Calculations",q:"In the lecture example with points A through F, which distance was used?",opts:["Manhattan","Euclidean","Minkowski","Hamming"],ans:1,exp:"The example specifically utilizes Euclidean distance for the calculations."},
+  {lec:4,sec:"Section 5: Examples and Calculations",q:"In the example, which clusters were the first to be merged at distance 0.50?",opts:["A and B","D and F","C and E","E and F"],ans:1,exp:"Iteration 0 shows that D and F are merged first because they have the minimum distance of 0.50."},
+  {lec:4,sec:"Section 5: Examples and Calculations",q:"At what distance were cluster A and cluster B merged?",opts:["0.50","0.71","1.00","1.41"],ans:1,exp:"The example shows A and B merging at distance 0.71."},
+  {lec:4,sec:"Section 5: Examples and Calculations",q:"Which cluster is the last one to be merged into the final group in the example?",opts:["Cluster C","(A, B)","(D, F)","Cluster E"],ans:1,exp:"The final step (Step 6) merges the large cluster containing C, D, E, and F with the cluster (A, B)."},
+  {lec:4,sec:"Section 6: Advantages and Disadvantages",q:"Why are dendrograms considered an advantage of this method?",opts:["Faster processing","Great visualization","Less memory usage","Automatic labeling"],ans:1,exp:"Dendrograms are highlighted as being excellent tools for data visualization."},
+  {lec:4,sec:"Section 6: Advantages and Disadvantages",q:"Hierarchical clustering is noted for being able to capture ________ clusters.",opts:["Linear","Concentric","Categorical","Only small"],ans:1,exp:"One specific advantage is the ability to capture concentric (nested) clusters."},
+  {lec:4,sec:"Section 6: Advantages and Disadvantages",q:"What is a primary disadvantage of hierarchical clustering?",opts:["No visualization","Hard to define levels","Too many roots","Only works on text"],ans:1,exp:"It is often difficult to determine exactly which level of the tree represents the 'correct' clusters."},
+  {lec:4,sec:"Section 6: Advantages and Disadvantages",q:"Experiments have shown that hierarchical clustering can be ________ by other techniques.",opts:["Replaced","Outperformed","Simplified","Ignored"],ans:1,exp:"Sources mention that other clustering techniques have been shown to outperform hierarchical methods in experiments."},
+  {lec:4,sec:"Section 6: Advantages and Disadvantages",q:"Hierarchical methods are useful because they provide ________ relations.",opts:["Random","Hierarchical","Temporary","Linear"],ans:1,exp:"A key advantage is that the tree provides explicit hierarchical relationships between the clusters."},
+
+  // --- LECTURE 5 ---
+  {lec:5,sec:"Section 1: Clustering Types",q:"Which of the following is NOT listed as a type of clustering?",opts:["Density-based","Hierarchical","Linear Regression","Model-based"],ans:2,exp:"The lecture lists partitioning, hierarchical, fuzzy, density-based, and model-based as the main types."},
+  {lec:5,sec:"Section 1: Clustering Types",q:"In 'Hard Clustering,' how many clusters does each document belong to?",opts:["Zero","Exactly one","Two or more","It varies"],ans:1,exp:"In hard clustering, elements do not overlap; each element belongs to exactly one cluster."},
+  {lec:5,sec:"Section 1: Clustering Types",q:"What characterizes 'Soft Clustering'?",opts:["Clusters overlap","Data is deleted","No rules exist","Single membership"],ans:0,exp:"Soft clustering (Fuzzy) allows clusters to overlap, meaning a document can belong to more than one cluster."},
+  {lec:5,sec:"Section 1: Clustering Types",q:"Which of these is an example of a 'Hard Clustering' method?",opts:["FCM","EM","K-means","Fuzzy logic"],ans:2,exp:"K-means and Medoids are cited as examples of hard partitioning methods."},
+  {lec:5,sec:"Section 1: Clustering Types",q:"Soft clustering is associated with a set of ________ for each element.",opts:["Membership levels","Fixed labels","Random values","Boolean counts"],ans:0,exp:"In soft clustering, elements are associated with membership levels indicating their degree of belonging to various clusters."},
+  {lec:5,sec:"Section 2: Fuzzy Logic",q:"Fuzzy logic is based on 'degrees of truth' instead of ________ logic.",opts:["Human","Boolean","Complex","Modern"],ans:1,exp:"Unlike modern computers based on 0 or 1 (Boolean), fuzzy logic uses degrees of truth."},
+  {lec:5,sec:"Section 2: Fuzzy Logic",q:"Who introduced the concept of Fuzzy Logic?",opts:["Lotfi Zadeh","Isaac Newton","Albert Einstein","Alan Turing"],ans:0,exp:"Dr. Lotfi Zadeh of UC Berkeley introduced fuzzy logic in 1965."},
+  {lec:5,sec:"Section 2: Fuzzy Logic",q:"Why was fuzzy logic originally introduced?",opts:["To speed up hardware","To model language uncertainty","To replace mathematics","To simplify databases"],ans:1,exp:"It was created to model the uncertainty found in natural language."},
+  {lec:5,sec:"Section 2: Fuzzy Logic",q:"Fuzzy logic allows a computer to behave in what way?",opts:["Less precisely","More strictly","Only with 1s","Without rules"],ans:0,exp:"Fuzzy logic simulates human reasoning and allows computers to behave less precisely to handle 'gray areas'."},
+  {lec:5,sec:"Section 2: Fuzzy Logic",q:"What is the range of a fuzzy logic membership grade?",opts:["-1 to 1","0 to 10","0 to 1","1 to 100"],ans:2,exp:"Membership grades (degrees) range between 0 and 1."},
+  {lec:5,sec:"Section 3: Crisp vs Fuzzy Sets",q:"A 'Crisp Set' divides a universe into which two groups?",opts:["Old and New","High and Low","Members and nonmembers","Large and Small"],ans:2,exp:"A crisp set strictly defines individuals as either members or nonmembers of a group."},
+  {lec:5,sec:"Section 3: Crisp vs Fuzzy Sets",q:"Which concept is a classic example of a fuzzy set?",opts:["Tall men","Binary code","Prime numbers","Even integers"],ans:0,exp:"'Tall men' is the classic example because 'tallness' is a matter of degree rather than a strict cutoff."},
+  {lec:5,sec:"Section 3: Crisp vs Fuzzy Sets",q:"In a crisp set of 'tall men,' a person is either tall (1) or ________.",opts:["Very tall","Average","Not tall (0)","Short (0.5)"],ans:2,exp:"In crisp logic, there is no middle ground; you are either in the set (1) or out (0)."},
+  {lec:5,sec:"Section 3: Crisp vs Fuzzy Sets",q:"In the cloud cover example, what membership degree is assigned to 75% cover for 'sunny'?",opts:["1.0","0.8","0.4","0"],ans:3,exp:"The lecture notes assign 0 membership to 'sunny' for a cloud cover of 75%."},
+  {lec:5,sec:"Section 3: Crisp vs Fuzzy Sets",q:"Membership degrees are determined by which function?",opts:["Random Function","Membership Function","Boolean Function","Linear Function"],ans:1,exp:"A fuzzy set is defined by assigning membership grades through a Membership Function."},
+  {lec:5,sec:"Section 4: Membership Functions",q:"What is a Membership Function (MF)?",opts:["A simple list","A curve","A database","A hardware chip"],ans:1,exp:"An MF is a curve that defines how points in the input space map to membership values."},
+  {lec:5,sec:"Section 4: Membership Functions",q:"Which are the most common shapes for membership functions?",opts:["Circular and Square","Star and Oval","Triangular and Trapezoidal","Flat and Vertical"],ans:2,exp:"The most common types are triangular and trapezoidal shapes."},
+  {lec:5,sec:"Section 4: Membership Functions",q:"How is the type of membership function usually chosen?",opts:["By the computer","By user experience","At random","By law"],ans:1,exp:"The type of MF is often context-dependent and chosen based on the experience of the user."},
+  {lec:5,sec:"Section 4: Membership Functions",q:"Besides triangular and trapezoidal, what is another mentioned MF shape?",opts:["Gaussian","Rectangular","Pyramid","Hexagonal"],ans:0,exp:"Triangular, trapezoidal, and Gaussian are the three forms shown in the lecture."},
+  {lec:5,sec:"Section 4: Membership Functions",q:"The Y-axis on a Membership Function graph represents ________.",opts:["Physical speed","Degree of Membership","Time in seconds","Input space"],ans:1,exp:"The Y-axis shows the membership value (confidence) between 0 and 1."},
+  {lec:5,sec:"Section 5: Logical Operations",q:"In fuzzy logic, the 'AND' operation corresponds to which function?",opts:["Max","Min","Sum","1 - A"],ans:1,exp:"The fuzzy AND operation between two values is the minimum (min) of those values."},
+  {lec:5,sec:"Section 5: Logical Operations",q:"In fuzzy logic, the 'OR' operation corresponds to which function?",opts:["Min","1 - A","Max","Sum"],ans:2,exp:"The fuzzy OR operation between two values is the maximum (max) of those values."},
+  {lec:5,sec:"Section 5: Logical Operations",q:"The fuzzy 'NOT' operation (Not A) is calculated as ________.",opts:["A * A","1 - A","1 + A","A / 2"],ans:1,exp:"The logical NOT is computed by subtracting the membership value from 1."},
+  {lec:5,sec:"Section 5: Logical Operations",q:"If A = 0.3 and B = 0.7, what is 'A AND B' in fuzzy logic?",opts:["1.0","0.7","0.3","0.4"],ans:2,exp:"AND is the minimum value; min(0.3, 0.7) = 0.3."},
+  {lec:5,sec:"Section 5: Logical Operations",q:"If A = 0.4, what is the value of 'NOT A'?",opts:["0.4","0.5","0.1","0.6"],ans:3,exp:"NOT is 1 - A; 1 - 0.4 = 0.6."},
+  {lec:5,sec:"Section 6: Fuzzy Inference System",q:"What does a Fuzzy Inference System (FIS) do?",opts:["Deletes data","Maps input to output","Stores records","Cleans noise"],ans:1,exp:"FIS is a way of mapping an input space to an output space using fuzzy logic."},
+  {lec:5,sec:"Section 6: Fuzzy Inference System",q:"FIS uses fuzzy membership functions and ________ to reason about data.",opts:["Rules","Passwords","Boolean gates","Hardware"],ans:0,exp:"FIS uses a collection of membership functions and 'rules' instead of Boolean logic."},
+  {lec:5,sec:"Section 6: Fuzzy Inference System",q:"Fuzzy rules usually take which form?",opts:["If-then","Loop-until","When-do","For-each"],ans:0,exp:"Fuzzy rules are production rules usually written as 'if p then q'."},
+  {lec:5,sec:"Section 6: Fuzzy Inference System",q:"In the rule 'if x is low then z is medium,' what is 'low'?",opts:["Output variable","Input variable","Fuzzy set","Hard count"],ans:2,exp:"In these rules, terms like 'low,' 'high,' and 'medium' are fuzzy sets."},
+  {lec:5,sec:"Section 6: Fuzzy Inference System",q:"Which is listed as an advantage of Fuzzy Logic?",opts:["Requires more code","More flexible","Slower development","More expensive"],ans:1,exp:"Advantages include being more natural, flexible, and more forgiving than traditional logic."},
+
+  // --- LECTURE 6 ---
+  {lec:6,sec:"Section 1: FIS Definitions",q:"A Fuzzy Inference System (FIS) is a way of mapping an input space to an ________ space.",opts:["Internal","Output","Integrated","Administrative"],ans:1,exp:"FIS is defined as a system that maps an input space to an output space using fuzzy logic."},
+  {lec:6,sec:"Section 1: FIS Definitions",q:"What does an FIS use to reason about data instead of Boolean logic?",opts:["Hard code","Linear math","Fuzzy rules","Random sets"],ans:2,exp:"FIS uses a collection of fuzzy membership functions and rules to process data."},
+  {lec:6,sec:"Section 1: FIS Definitions",q:"What is another name often used for a Fuzzy Inference System?",opts:["Database engine","Expert system","Data warehouse","Web crawler"],ans:1,exp:"An FIS is sometimes referred to as a fuzzy expert system."},
+  {lec:6,sec:"Section 1: FIS Definitions",q:"Fuzzy rules are production rules that usually take which form?",opts:["Loop-until","For-each","If-then","While-do"],ans:2,exp:"FIS rules are typically written in the 'if p then q' format."},
+  {lec:6,sec:"Section 1: FIS Definitions",q:"In the rule 'if x is low then z is medium,' what is the term 'low'?",opts:["Input variable","Fuzzy set","Crisp value","Operator"],ans:1,exp:"In a fuzzy rule, terms like low, medium, and high represent fuzzy sets."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"What is the very first step in fuzzy logic processing?",opts:["Aggregation","Fuzzification","Inference","Defuzzification"],ans:1,exp:"The first step involves a domain transformation called fuzzification."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"Which step transforms crisp inputs into fuzzy inputs?",opts:["Integration","Fuzzification","Evaluation","Summation"],ans:1,exp:"Fuzzification is the process where crisp inputs are converted into fuzzy inputs using membership functions."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"What are needed to transform crisp inputs into fuzzy inputs?",opts:["Membership functions","Logic gates","Truth tables","SQL queries"],ans:0,exp:"Membership functions are applied to actual values to determine the degree of truth for rule premises."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"Antecedents in fuzzification are resolved to a degree of membership between:",opts:["-1 and 1","0 and 1","1 and 10","0 and 100"],ans:1,exp:"Every fuzzy statement in the antecedent is resolved to a value between 0 and 1."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"What is Step 2 of the FIS process called?",opts:["Cleaning","Rule Evaluation","Selection","Aggregation"],ans:1,exp:"Step 2 is Rule Evaluation, which is also referred to as Fuzzy Inference."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"Rule Evaluation applies fuzzy rules to the fuzzy inputs generated during ________.",opts:["Mining","Fuzzification","Clustering","Storage"],ans:1,exp:"This step evaluates the rules based on the outputs from the fuzzification process."},
+  {lec:6,sec:"Section 2: The Four Steps of FIS",q:"What is the result of the inference process for each rule?",opts:["A single number","One fuzzy set","A crisp label","A new database"],ans:1,exp:"The inference process results in one fuzzy set being assigned to each output variable for each rule."},
+  {lec:6,sec:"Section 3: Aggregation and Output",q:"Which step combines the outputs of all rules into a single fuzzy set?",opts:["Fuzzification","Aggregation","Selection","Transformation"],ans:1,exp:"Aggregation is the process where individual rule outputs are combined into one fuzzy set for each output variable."},
+  {lec:6,sec:"Section 3: Aggregation and Output",q:"What is the input for the aggregation process?",opts:["Crisp numbers","Truncated functions","Raw databases","Boolean values"],ans:1,exp:"The input consists of the list of truncated output functions returned by the implication process."},
+  {lec:6,sec:"Section 3: Aggregation and Output",q:"Which of the following is a commonly used aggregation operator?",opts:["Minimum","Maximum","Division","Subtraction"],ans:1,exp:"The maximum (point-wise maximum over all sets) is a common aggregation operator."},
+  {lec:6,sec:"Section 3: Aggregation and Output",q:"Besides the maximum, what is another common aggregation operator?",opts:["Average","Sum","Difference","Square"],ans:1,exp:"The sum and the probabilistic sum are also used for aggregation."},
+  {lec:6,sec:"Section 3: Aggregation and Output",q:"The output of the aggregation process is ________ for each output variable.",opts:["One crisp value","One fuzzy set","A list of rules","A logic table"],ans:1,exp:"Aggregation results in exactly one fuzzy set for every output variable."},
+  {lec:6,sec:"Section 4: Defuzzification",q:"What is the final step in the FIS functional operations?",opts:["Rule Evaluation","Defuzzification","Fuzzification","Aggregation"],ans:1,exp:"The process concludes with defuzzification to produce a usable output."},
+  {lec:6,sec:"Section 4: Defuzzification",q:"What does defuzzification convert the fuzzy output set into?",opts:["A fuzzy range","A crisp number","A text label","A new rule"],ans:1,exp:"In defuzzification, the fuzzy output set is transformed back into a crisp number."},
+  {lec:6,sec:"Section 4: Defuzzification",q:"Which defuzzification method finds the 'center of gravity'?",opts:["Maximum method","Centroid method","Minimum method","Average method"],ans:1,exp:"The centroid method computes the crisp value by finding the center of gravity of the membership function."},
+  {lec:6,sec:"Section 4: Defuzzification",q:"In the 'maximum method' of defuzzification, which value is chosen?",opts:["The lowest value","Maximum truth value","The mean value","The median value"],ans:1,exp:"This method chooses a variable value where the fuzzy set has its maximum truth value."},
+  {lec:6,sec:"Section 5: The Tipping Problem",q:"In the tipping example, what are the two input variables?",opts:["Cost and Time","Food and Service","Price and Quality","Location and Menu"],ans:1,exp:"The example uses the quality of food and service at a restaurant as inputs."},
+  {lec:6,sec:"Section 5: The Tipping Problem",q:"What scale is used to rate the inputs in the tipping example?",opts:["1-5","0-10","0-100","1-10"],ans:1,exp:"Both food and service are rated on a scale from 0 to 10."},
+  {lec:6,sec:"Section 5: The Tipping Problem",q:"What is the output variable in the restaurant example?",opts:["Total bill","Tip amount","Wait time","Food rating"],ans:1,exp:"The system aims to determine the percentage or amount of tip to be given."},
+  {lec:6,sec:"Section 5: The Tipping Problem",q:"If the service is 'excellent,' the rule suggests the tip should be:",opts:["Cheap","Generous","Average","Zero"],ans:1,exp:"The rule states: 'If service is excellent or food is delicious, then tip is generous'."},
+  {lec:6,sec:"Section 5: The Tipping Problem",q:"In the rule 'if service is good, then tip is average,' what is 'service'?",opts:["Fuzzy set","Input variable","Output variable","Rule conclusion"],ans:1,exp:"Service and Food are the input variables for the system."},
+  {lec:6,sec:"Section 6: Logic and Heuristics",q:"Most tools for fuzzy expert systems allow how many conclusions per rule?",opts:["Only one","More than one","Exactly zero","No more than two"],ans:1,exp:"Modern tools allow for multiple conclusions to be drawn from a single rule."},
+  {lec:6,sec:"Section 6: Logic and Heuristics",q:"What part of the rule is the 'if' part called?",opts:["Consequent","Antecedent","Conclusion","Result"],ans:1,exp:"The 'if' part of a fuzzy rule is technically known as the antecedent."},
+  {lec:6,sec:"Section 6: Logic and Heuristics",q:"What part of the rule is the 'then' part called?",opts:["Premise","Consequent","Input","Clause"],ans:1,exp:"The 'then' part, which describes the action or result, is called the consequent."},
+  {lec:6,sec:"Section 6: Logic and Heuristics",q:"Fuzzy rules are written in terms of membership function ________.",opts:["Math codes","Linguistic labels","Binary digits","Pixel values"],ans:1,exp:"Rules follow common-sense behavior and use linguistic labels like 'poor,' 'good,' or 'delicious'."},
+
+  // --- LECTURE 7 ---
+  {lec:7,sec:"Section 1: Basic Definitions",q:"Genetic Algorithms (GAs) are search and optimization techniques based on whose principle?",opts:["Newton","Darwin","Einstein","Turing"],ans:1,exp:"GAs are based on Darwin's Principle of Natural Selection."},
+  {lec:7,sec:"Section 1: Basic Definitions",q:"Which biological process do Genetic Algorithms mimic?",opts:["Digestion","Evolution","Circulation","Respiration"],ans:1,exp:"GA is a machine-learning technique that mimics the biological process of evolution."},
+  {lec:7,sec:"Section 1: Basic Definitions",q:"What is the basic idea behind the Principle of Natural Selection?",opts:["Keep all data","Select the Best","Ignore the Rest","Delete randomly"],ans:1,exp:"The core idea is to 'Select The Best, Discard The Rest'."},
+  {lec:7,sec:"Section 1: Basic Definitions",q:"In the giraffe example, what trait was propagated because it was favorable?",opts:["Long tails","Long necks","Fast running","Spotted skin"],ans:1,exp:"Giraffes with longer necks had a better chance of survival and passed this trait to future generations."},
+  {lec:7,sec:"Section 1: Basic Definitions",q:"Some beneficial ________ can lead to favorable traits that propagate over generations.",opts:["Deletions","Mutations","Failures","Errors"],ans:1,exp:"Mutations can be beneficial; if they are favorable, they are propagated over generations."},
+  {lec:7,sec:"Section 2: GA Structure and Terminology",q:"What is each candidate solution in a Genetic Algorithm called?",opts:["Gene","Node","Chromosome","Link"],ans:2,exp:"Each candidate solution in the GA framework is called a chromosome."},
+  {lec:7,sec:"Section 2: GA Structure and Terminology",q:"A chromosome is defined as a string of ________.",opts:["Cells","Genes","Atoms","Bits"],ans:1,exp:"A chromosome consists of a string of genes."},
+  {lec:7,sec:"Section 2: GA Structure and Terminology",q:"Which of the following is NOT one of the three primary genetic operators?",opts:["Crossover","Mutation","Selection","Sorting"],ans:3,exp:"The specific genetic operators used are selection (reproduction), crossover, and mutation."},
+  {lec:7,sec:"Section 2: GA Structure and Terminology",q:"A typical GA requires a genetic representation and a ________ function.",opts:["Math","Logic","Fitness","Binary"],ans:2,exp:"GAs require a representation of the solution domain and a fitness function to evaluate it."},
+  {lec:7,sec:"Section 2: GA Structure and Terminology",q:"Why are fixed-size genetic representations considered convenient?",opts:["Easy alignment","Lower storage","Higher speed","More colors"],ans:0,exp:"Fixed-size parts are easily aligned, which facilitates simple crossover operations."},
+  {lec:7,sec:"Section 3: Representations and Fitness",q:"The fitness function is used to measure the ________ of a represented solution.",opts:["Size","Quality","Origin","Length"],ans:1,exp:"The fitness function measures the quality of the solution to determine which is better."},
+  {lec:7,sec:"Section 3: Representations and Fitness",q:"The fitness function is always ________.",opts:["Fixed","Linear","Problem dependent","Extremely simple"],ans:2,exp:"Because every problem is different, the fitness function must be problem-dependent."},
+  {lec:7,sec:"Section 3: Representations and Fitness",q:"Which of the following can be used to represent a chromosome?",opts:["Bit strings","Sound files","Hard drives","Paper logs"],ans:0,exp:"Chromosomes can be represented as bit strings, real numbers, permutations, or lists of rules."},
+  {lec:7,sec:"Section 3: Representations and Fitness",q:"In a bit string representation, what values are typically assigned to bits?",opts:["1 and 2","0 and 1","X and Y","A and B"],ans:1,exp:"A bit string uses an array of bits where values are 0 or 1."},
+  {lec:7,sec:"Section 3: Representations and Fitness",q:"Tree-like representations are specifically explored in ________.",opts:["Data mining","Logic gates","Genetic programming","Linear algebra"],ans:2,exp:"Tree-like structures are the focus of genetic programming."},
+  {lec:7,sec:"Section 4: Working Mechanism",q:"What is the first step in the working mechanism of a GA?",opts:["Mutation","Crossover","Initialize population","Evaluate solutions"],ans:2,exp:"The process begins by initializing a population (P) of n elements."},
+  {lec:7,sec:"Section 4: Working Mechanism",q:"When does the GA process typically stop?",opts:["After one hour","Memory is full","Solution is found","Data is deleted"],ans:2,exp:"The loop continues until a specified termination condition (like an optimum solution) is satisfied."},
+  {lec:7,sec:"Section 4: Working Mechanism",q:"Which operator involves creating a 'mating pool'?",opts:["Mutation","Encoding","Selection","Crossover"],ans:2,exp:"Selection involves evaluating elements and creating a mating pool of those that pass fitness criteria."},
+  {lec:7,sec:"Section 4: Working Mechanism",q:"Crossover involves swapping parts of solutions at random ________.",opts:["Times","Angles","Points","Speeds"],ans:2,exp:"Crossover selects random 'crossing sites' and swaps the parts of the solutions following those points."},
+  {lec:7,sec:"Section 4: Working Mechanism",q:"What is the primary action taken during mutation?",opts:["Merging sets","Sorting data","Random change","Total deletion"],ans:2,exp:"Mutation artificially and randomly changes a small portion of the solution, such as flipping a bit."},
+  {lec:7,sec:"Section 5: Data Mining and Examples",q:"GA can be developed for supervised and ________ data mining.",opts:["Manual","Complex","Unsupervised","Preliminary"],ans:2,exp:"The evolutionary approach of GAs is applicable to both supervised and unsupervised data mining."},
+  {lec:7,sec:"Section 5: Data Mining and Examples",q:"In the 'Secret Number' example, what does the 'score' represent?",opts:["String length","Time taken","Correct digits","Random number"],ans:2,exp:"The score (fitness) is determined by how many digits were correctly guessed."},
+  {lec:7,sec:"Section 5: Data Mining and Examples",q:"If the first two strings in the example have low scores, they are ________.",opts:["Saved","Deleted","Doubled","Renamed"],ans:1,exp:"Elements with low scores are discarded, following the 'Select the Best' principle."},
+  {lec:7,sec:"Section 5: Data Mining and Examples",q:"In Step 3 of the example, parents are 'mated' by ________ each number.",opts:["Adding","Splitting","Squaring","Reversing"],ans:1,exp:"To mate parents, each number is split at a randomly selected position for crossover."},
+  {lec:7,sec:"Section 5: Data Mining and Examples",q:"After crossover, the resulting new solutions are called ________.",opts:["Parents","Offspring","Ancestors","Templates"],ans:1,exp:"The combinations resulting from crossover are the new offspring (e.g., offspring E and F)."},
+  {lec:7,sec:"Section 6: Limitations and Applications",q:"Genetic Algorithms do NOT guarantee an ________ solution.",opts:["Initial","Optimal","External","Abstract"],ans:1,exp:"One limitation is that GAs do not guarantee an optimal solution."},
+  {lec:7,sec:"Section 6: Limitations and Applications",q:"GAs often settle in what type of 'minimum'?",opts:["Global","Absolute","Local","Infinite"],ans:2,exp:"GAs often settle in a sub-optimal solution or 'local minimum'."},
+  {lec:7,sec:"Section 6: Limitations and Applications",q:"GA development requires programming skills and ________ skills.",opts:["Drawing","Cooking","Statistical","Linguistic"],ans:2,exp:"The development and interpretation of solutions require both programming and statistical expertise."},
+  {lec:7,sec:"Section 6: Limitations and Applications",q:"Which of these is a listed application of Genetic Algorithms?",opts:["Reading news","Pattern recognition","Simple addition","Basic storage"],ans:1,exp:"Pattern recognition is one of many complex applications for GAs."},
+  {lec:7,sec:"Section 6: Limitations and Applications",q:"GAs are useful for complex design and ________ of induction rules.",opts:["Deletion","Removal","Optimization","Formatting"],ans:2,exp:"GAs are specifically used for the optimization of induction rules and complex engineering structures."},
+
+  // --- LECTURE 8 ---
+  {lec:8,sec:"Section 1: Data Challenges",q:"According to the sources, why is it often hard to find the data you need?",opts:["Data is scattered","Data is too small","Networks are too fast","Databases are empty"],ans:0,exp:"Data is often scattered over the network in many versions with subtle differences."},
+  {lec:8,sec:"Section 1: Data Challenges",q:"What do users say summary data provides to the organization?",opts:["Higher costs","Real value","More confusion","Less security"],ans:1,exp:"Users believe that summary data has a real value to the organization."},
+  {lec:8,sec:"Section 1: Data Challenges",q:"Historical data is essential because it holds the key to understanding data over ________.",opts:["Networks","Budget","Time","Space"],ans:2,exp:"Historical data allows users to understand data patterns and changes over time."},
+  {lec:8,sec:"Section 1: Data Challenges",q:"What capability do users require for decision support?",opts:["Data deletion","What-if","Fast typing","Manual logs"],ans:1,exp:"'What-if' capabilities are a specific requirement mentioned for users to support decisions."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"Bill Inmon defines a data warehouse as a subject-oriented, integrated, nonvolatile, and ________ collection of data.",opts:["Small","Time-variant","Temporary","Unstructured"],ans:1,exp:"The four standard characteristics defined by Bill Inmon are subject-oriented, integrated, time-variant, and nonvolatile."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"Data warehousing is the process of transforming data into ________.",opts:["Information","Hardware","Electricity","Textbooks"],ans:0,exp:"It is defined as a process of transforming raw data into meaningful information for users."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"'Subject-oriented' means the warehouse is organized around subjects like:",opts:["Hard drives","Sales","Code","Keys"],ans:1,exp:"Data is organized around business subjects such as sales, product, and customer."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"Why is 'Integration' necessary for a data warehouse?",opts:["For speed","Consistency","Storage space","User passwords"],ans:1,exp:"Integration involves data preprocessing to ensure all data is consistent across multiple sources."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"The time horizon for a data warehouse (e.g., 5-10 years) is ________ than operational systems.",opts:["Shorter","Longer","Smaller","Equal"],ans:1,exp:"Data warehouses have a significantly longer time horizon to provide a historical perspective."},
+  {lec:8,sec:"Section 2: Definitions and Characteristics",q:"What does 'Nonvolatile' mean in the context of a data warehouse?",opts:["Easily deleted","Read-only","Always changing","Highly explosive"],ans:1,exp:"Once data is recorded, it cannot be updated; it is stored in a read-only format."},
+  {lec:8,sec:"Section 3: Environment and Components",q:"Which component is the most common in a Data Warehouse (DW) environment?",opts:["Data Mart","The Data Store","Metadata","Fact Table"],ans:1,exp:"The Data Store is described as the most common component, used to feed the warehouse."},
+  {lec:8,sec:"Section 3: Environment and Components",q:"A 'Data Mart' contains a ________ of corporate-wide data.",opts:["Total copy","Subset","Summary only","Metadata file"],ans:1,exp:"A data mart contains a subset of data that is of value to a specific group of users."},
+  {lec:8,sec:"Section 3: Environment and Components",q:"The implementation cycle of a data mart is usually measured in ________.",opts:["Minutes","Weeks","Years","Decades"],ans:1,exp:"Unlike full warehouses, data marts can be implemented in weeks rather than months or years."},
+  {lec:8,sec:"Section 3: Environment and Components",q:"What are Data Warehouse environments said to contain?",opts:["Data store, data mart, and metadata","Hard drives, servers, and cables","Users, managers, and designers","Sales, products, and prices"],ans:0,exp:"The three main components of the DW environment are the data store, data mart, and metadata."},
+  {lec:8,sec:"Section 4: Metadata",q:"Metadata is simply defined as ________.",opts:["Digital files","Data about data","Business rules","Fact tables"],ans:1,exp:"Metadata provides descriptions and context, essentially acting as 'data about data'."},
+  {lec:8,sec:"Section 4: Metadata",q:"Which type of metadata is used by designers and administrators?",opts:["Business","Technical","User","Fact"],ans:1,exp:"Technical Metadata contains information used by DW designers and administrators."},
+  {lec:8,sec:"Section 4: Metadata",q:"Business Metadata helps end-users to ________ the information.",opts:["Delete","Understand","Code","Encrypt"],ans:1,exp:"It provides details that give end-users an easy way to understand the stored data."},
+  {lec:8,sec:"Section 4: Metadata",q:"Metadata acts as the '________' that allow us to handle raw data.",opts:["Locks","Keys","Files","Notes"],ans:1,exp:"Metadata are described as the essential 'keys' for transforming raw data into knowledge."},
+  {lec:8,sec:"Section 4: Metadata",q:"Which of the following is a component of Metadata?",opts:["Units sold","Patterns of access","Store names","Product color"],ans:1,exp:"Metadata components include transformation maps, data ownership, and patterns of access."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"Which schema features a single, large, central fact table?",opts:["Snowflake","Star","Galaxy","Linear"],ans:1,exp:"The Star Schema consists of one large central fact table and one table for each dimension."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"In a Star Schema, dimension tables contain ________ about business subjects.",opts:["Prices","Descriptions","Statistics","Formulas"],ans:1,exp:"Dimension tables contain the qualitative descriptions of the subjects."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"What is a major benefit of the Star Schema?",opts:["High normalization","Easy to understand","Many joins","Smallest size"],ans:1,exp:"Star schemas are noted for being easy to understand and for reducing the number of physical joins."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"The Snowflake Schema is a ________ of the star schema model.",opts:["Replacement","Variant","Opposite","Summary"],ans:1,exp:"The Snowflake Schema is defined specifically as a variant of the star schema model."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"In a Snowflake Schema, dimension tables are ________.",opts:["Denormalized","Normalized","Deleted","Ignored"],ans:1,exp:"Snowflake dimension tables are normalized (split into additional tables) to reduce redundancy."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"What is a drawback of the Snowflake Schema?",opts:["Too few tables","Slow report generation","Easy joins","Small dimensions"],ans:1,exp:"Due to normalization, it requires more time-consuming joins, making report generation slower."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"Which schema is also known as the 'Galaxy Schema'?",opts:["Star","Fact Constellation","Snowflake","Linear"],ans:1,exp:"The Fact Constellation schema is viewed as a collection of stars, hence the name Galaxy Schema."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"A Galaxy Schema is used when multiple fact tables ________ dimension tables.",opts:["Hide","Share","Delete","Create"],ans:1,exp:"In this schema, multiple fact tables share common dimension tables."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"Fact tables contain factual or ________ data.",opts:["Textual","Quantitative","Optional","Random"],ans:1,exp:"Fact tables store quantitative data (numbers/measures) like units sold or dollars."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"The relationship between dimension tables and fact tables in a star schema is:",opts:["N:N","1:N","1:1","N:1"],ans:1,exp:"There is a 1-to-Many (1:N) relationship where one dimension tuple points to many facts."},
+  {lec:8,sec:"Section 5: DW Schemas",q:"Which schema is required for sophisticated applications?",opts:["Simple Star","Fact Constellation","Basic Flat","Manual List"],ans:1,exp:"Sophisticated applications often require the complexity of the Fact Constellation (Galaxy) schema."},
+
+  // --- LECTURE 9 ---
+  {lec:9,sec:"Section 1: Building and Architecture",q:"What is the final step listed in the process of building a data warehouse?",opts:["Data Selection","Data Loading","Data Pre-processing","Data Cleaning"],ans:1,exp:"The building process follows the order of selection, pre-processing, transformation/integration, and finally loading."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"Data in a warehouse is stored as dimension tables and ________.",opts:["Flat files","Fact tables","Raw logs","User views"],ans:1,exp:"The source notes that data in the warehouse is specifically stored in fact and dimension tables."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"Which architecture is characterized by 'mini-warehouses' with limited scope?",opts:["Real-Time","Independent Mart","Two-Level","Enterprise"],ans:1,exp:"Independent data marts are described as limited-scope mini-warehouses."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"What is a disadvantage of the 'Independent Data Mart' architecture?",opts:["Data access complexity","High storage cost","Small data size","Simple ETL"],ans:0,exp:"Having multiple independent marts creates complexity for users trying to access data."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"What does 'ODS' stand for in a three-level architecture?",opts:["Online Data Server","Operational Data Store","Open Data System","Office Data Site"],ans:1,exp:"The Operational Data Store (ODS) provides an option for obtaining current data within the architecture."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"In which architecture are the ODS and the Data Warehouse 'one and the same'?",opts:["Three-Level","Logical Data Mart","Independent","Two-Level"],ans:1,exp:"In the Logical Data Mart and Real-Time architecture, the ODS and warehouse are integrated as one."},
+  {lec:9,sec:"Section 1: Building and Architecture",q:"What is a primary benefit of using a 'Logical Data Mart' architecture?",opts:["Easier to create marts","Slower data access","Manual ETL","Single data source"],ans:0,exp:"This architecture treats marts as logical views, making it easier to create new ones without separate databases."},
+  {lec:9,sec:"Section 2: The ETL Process",q:"The ETL process stands for Extract, ________, and Load.",opts:["Transfer","Transform","Translate","Transmit"],ans:1,exp:"ETL is the standard acronym for Extraction, Transformation, and Loading."},
+  {lec:9,sec:"Section 2: The ETL Process",q:"Which part of ETL involves gathering data from multiple heterogeneous sources?",opts:["Cleaning","Extraction","Loading","Refreshing"],ans:1,exp:"Data extraction typically collects data from multiple, diverse, and external sources."},
+  {lec:9,sec:"Section 2: The ETL Process",q:"What task is performed during the 'Load' phase of ETL?",opts:["Source analysis","Building indices","Error detection","Field naming"],ans:1,exp:"Loading involves sorting, summarizing, and building indices and partitions for the warehouse."},
+  {lec:9,sec:"Section 2: The ETL Process",q:"Which process propagates updates from data sources to the warehouse?",opts:["Selection","Refresh","Mining","Pivot"],ans:1,exp:"The 'Refresh' step is responsible for moving updates from sources into the warehouse."},
+  {lec:9,sec:"Section 3: Data Cube and Modeling",q:"A data warehouse is based on a ________ data model.",opts:["Relational","Multidimensional","Hierarchical","Network"],ans:1,exp:"Data warehouses use a multidimensional model, often visualized as a data cube."},
+  {lec:9,sec:"Section 3: Data Cube and Modeling",q:"In a data cube, 'perspectives or entities' are known as ________.",opts:["Facts","Dimensions","Measures","Cells"],ans:1,exp:"Dimensions (like time or product) are the perspectives an organization uses to keep records."},
+  {lec:9,sec:"Section 3: Data Cube and Modeling",q:"What does a Fact Table typically contain?",opts:["Item names","Measures","User lists","Web links"],ans:1,exp:"Fact tables contain quantitative measures and keys to related dimension tables."},
+  {lec:9,sec:"Section 3: Data Cube and Modeling",q:"An example of a measure in a sales fact table is ________.",opts:["Time","Dollars_sold","Location","Branch"],ans:1,exp:"Measures are the numerical values being tracked, such as sales volume or dollars sold."},
+  {lec:9,sec:"Section 4: OLAP vs OLTP",q:"Which system is designed for day-to-day operations like payroll and banking?",opts:["OLAP","OLTP","KDD","FIS"],ans:1,exp:"Online Transaction Processing (OLTP) handles daily operational tasks and query processing."},
+  {lec:9,sec:"Section 4: OLAP vs OLTP",q:"OLAP systems serve knowledge workers in the role of ________.",opts:["Data entry","Decision making","Web design","Network repair"],ans:1,exp:"OLAP systems facilitate data analysis to support management in making business decisions."},
+  {lec:9,sec:"Section 4: OLAP vs OLTP",q:"What does OLAP stand for?",opts:["Online Logic and Processing","Online Analytical Processing","Office Analysis Process","Open Analytics Page"],ans:1,exp:"OLAP stands for Online Analytical Processing."},
+  {lec:9,sec:"Section 5: OLAP Operations",q:"Which OLAP operation moves from higher-level summary to detailed data?",opts:["Roll-up","Drill-down","Pivot","Slice"],ans:1,exp:"Drill-down (or roll-down) is the reverse of roll-up, providing more detailed data."},
+  {lec:9,sec:"Section 5: OLAP Operations",q:"What is another name for the 'Drill Up' operation?",opts:["Drill down","Roll up","Slice","Dice"],ans:1,exp:"Drill-up is also known as a roll-up, which summarizes data by climbing a hierarchy."},
+  {lec:9,sec:"Section 5: OLAP Operations",q:"Which operation defines a sub-cube by selecting two or more dimensions?",opts:["Slice","Dice","Pivot","Roll up"],ans:1,exp:"The 'dice' operation picks specific criteria across multiple dimensions to form a smaller cube."},
+  {lec:9,sec:"Section 5: OLAP Operations",q:"The 'Pivot' operation is used to ________ the data axes in view.",opts:["Delete","Rotate","Filter","Hide"],ans:1,exp:"Pivot (or rotate) changes the orientation of the axes to provide an alternative view of the data."},
+  {lec:9,sec:"Section 5: OLAP Operations",q:"A concept hierarchy maps low-level concepts to ________ concepts.",opts:["Smaller","Higher-level","Hidden","Coded"],ans:1,exp:"It defines a sequence of mappings from specific concepts to more general, higher-level ones."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"Which design view represents information stored inside the data warehouse?",opts:["Top-down view","Data warehouse view","Business query view","Data source view"],ans:1,exp:"The 'data warehouse view' specifically includes the fact and dimension tables stored within."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"The 'top-down view' in design allows for the ________ of relevant information.",opts:["Deletion","Selection","Rotation","Masking"],ans:1,exp:"This view allows designers to select what information is needed for the warehouse."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"Which design approach starts with experiments and prototypes?",opts:["Top-down","Bottom-up","Combined","Linear"],ans:1,exp:"The bottom-up approach is experimental and useful for early-stage technology development."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"When is a 'Top-Down' design approach most useful?",opts:["Technology is new","Problems are clear","Budget is zero","Data is missing"],ans:1,exp:"Top-down is best when problems are well understood and the technology being used is mature."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"The 'Combined' design approach exploits the strategic nature of ________.",opts:["Bottom-up","Top-down","Manual","Random"],ans:1,exp:"It combines the strategic planning of top-down with the rapid implementation of bottom-up."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"A data warehouse serves as part of a ________ feedback system.",opts:["Open-loop","Closed-loop","Half-loop","No-loop"],ans:1,exp:"It acts as a 'closed-loop' system that helps executives plan, execute, and assess operations."},
+  {lec:9,sec:"Section 6: Design and Usage",q:"In the case study, 'All Electronics' tracks sales by time, item, branch, and ________.",opts:["Color","Location","Owner","Weight"],ans:1,exp:"The four specific dimensions mentioned in the case study are time, item, branch, and location."},
+
+  // --- LECTURE 10 ---
+  {lec:10,sec:"Section 1: Web Mining Intro",q:"Web mining is the use of data mining techniques to extract ________ from the web.",opts:["Hardware","Knowledge","Server logs only","Entire websites"],ans:1,exp:"Web mining is defined as using data mining to extract knowledge from web data."},
+  {lec:10,sec:"Section 1: Web Mining Intro",q:"Which of the following is NOT listed as a type of web data?",opts:["Web documents","Physical hard drives","Site usage logs","Hyperlinks"],ans:1,exp:"The sources list web documents, hyperlinks, and usage logs as the primary data types."},
+  {lec:10,sec:"Section 1: Web Mining Intro",q:"The World Wide Web is described as a highly ________ information repository.",opts:["Homogeneous","Structured","Heterogeneous","Small-scale"],ans:2,exp:"The web is characterized as huge, widely-distributed, and highly heterogeneous."},
+  {lec:10,sec:"Section 1: Web Mining Intro",q:"Web data sets can be very large, often reaching ________ of terabytes.",opts:["Dozens","Hundreds","Thousands","Millions"],ans:1,exp:"Web data sets can range from tens to hundreds of terabytes."},
+  {lec:10,sec:"Section 1: Web Mining Intro",q:"Why can web mining NOT be performed on a single server?",opts:["Security risks","Data size","Lack of software","Slow internet"],ans:1,exp:"Due to the massive size (multi-terabyte sets), large farms of servers are required."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"Web content mining focuses on extracting information from ________.",opts:["Server logs","Page content","Link structures","Browser history"],ans:1,exp:"It involves the mining, extraction, and integration of knowledge from web page content."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"While data mining deals with structured data, web data is mainly ________.",opts:["Fully structured","Semi-structured","Only text-based","Purely numerical"],ans:1,exp:"Web data is mainly semi-structured and/or unstructured."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"The 'Bag of words' method for unstructured documents ignores ________.",opts:["Word frequency","Word sequence","Punctuation","Boolean values"],ans:1,exp:"The 'Bag of words' representation takes single words as features but ignores the sequence in which they occur."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"What technique reduces words to their morphological roots?",opts:["Stemming","Frequency","Filtering","Boolean"],ans:0,exp:"Stemming is a feature reduction technique that reduces words to their roots."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"Which approach uses 'Intelligent-Search-Agents' to interpret information?",opts:["Database Approach","Agent-Based","Manual Approach","Linear Approach"],ans:1,exp:"The agent-based approach develops intelligent agents to search, organize, and interpret discovered information."},
+  {lec:10,sec:"Section 2: Web Content Mining",q:"In the Database Approach, 'Multilevel-Databases' keep semi-structured info at the ________.",opts:["Middle level","Highest level","Lowest level","Admin level"],ans:2,exp:"In multilevel-databases, the lowest level is where semi-structured information is kept."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"Web structure mining discovers information based on the ________ of the web.",opts:["Usage logs","Content text","Graph structure","File size"],ans:2,exp:"It is the process of discovering structure information from the web graph."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"In a typical web graph, what do the 'nodes' represent?",opts:["Hyperlinks","Web pages","Data packets","User IDs"],ans:1,exp:"The structure consists of web pages as nodes and hyperlinks as edges."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"Hyperlink analysis at the document level is called ________.",opts:["Intra-page mining","Inter-page mining","Usage mining","Text mining"],ans:0,exp:"Mining at the document level is intra-page, while hyperlink level is inter-page."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"What are the two main algorithms used in hyperlink analysis?",opts:["K-means and Medoids","PageRank and HITS","Apriori and ID3","SQL and NLP"],ans:1,exp:"The two main approaches mentioned are PageRank and Hubs and Authorities (HITS)."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"PageRank calculates the importance of a page based on its ________.",opts:["File size","Backlinks","Loading speed","Total text"],ans:1,exp:"PageRank importance is calculated based on the number of pages that point to it (backlinks)."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"According to HITS, an 'Authoritative page' is defined as ________.",opts:["A link directory","The best source","A random page","A starting point"],ans:1,exp:"An authority is defined as the best source for the requested information."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"What is a 'Hub page' in the context of HITS?",opts:["A page with no links","Links to authorities","A primary database","A local server"],ans:1,exp:"Hub pages contain links to highly important (authoritative) pages."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"What does the 'HITS' algorithm stand for?",opts:["High Information Tool Search","Hyperlink Induced Topic Search","Hypertext Internal Track System","Holistic Internet Trend Study"],ans:1,exp:"HITS stands for Hyperlink Induced Topic Search."},
+  {lec:10,sec:"Section 3: Web Structure Mining",q:"In the HITS algorithm, 'Hubbiness' is the sum of the ________ of the pages it links to.",opts:["Hits","Authorities","Dimensions","Keywords"],ans:1,exp:"Hubbiness (h) is defined as A x a, where a is the authority vector."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Web usage mining automatically discovers patterns in ________.",opts:["Page code","Clickstreams","Hyperlinks","Metadata only"],ans:1,exp:"WUM discovers patterns in clickstreams and data resulting from user interactions."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"What is the primary goal of Web Usage Mining?",opts:["Fix server errors","Analyze user profiles","Delete old logs","Rank web pages"],ans:1,exp:"The goal is to analyze behavioral patterns and profiles of users interacting with a site."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Web usage mining is also commonly known as ________.",opts:["Web log Mining","Web Link Mining","Content Scraping","Page Ranking"],ans:0,exp:"It is also known as Web log Mining because it uses server logs."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Which of the following is a source of data for Web Usage Mining?",opts:["Printed manuals","Client-side cookies","Keyboard serials","Router hardware"],ans:1,exp:"Data sources include server access logs, referrer logs, and client-side cookies."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"How many phases are there in the Web Usage Mining process?",opts:["Two","Three","Five","Seven"],ans:1,exp:"The process involves three phases: Pre-processing, Pattern Discovery, and Pattern Analysis."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"In data cleaning, entries with suffixes like '.gif' or '.jpeg' are ________.",opts:["Prioritized","Removed","Encrypted","Summarized"],ans:1,exp:"Entries with these filename suffixes are removed during the cleaning process."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Which task helps discover groups of users with similar navigation patterns?",opts:["Regression","Clustering","Association","Stemming"],ans:1,exp:"Clustering of users helps discover groups with similar patterns to provide personalized content."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Sequential patterns are used to ________.",opts:["Delete cookies","Predict visit patterns","Create SQL tables","Shorten URLs"],ans:1,exp:"They extract intersession patterns to predict future visits and place ads/recommendations."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"Association rules in WUM help to ________.",opts:["Rank pages","Restructure sites","Clean images","Block users"],ans:1,exp:"They discover correlations among pages accessed together, helping to restructure websites or develop marketing strategies."},
+  {lec:10,sec:"Section 4: Web Usage Mining",q:"In the design of a web log miner, OLAP is used to ________ in the data cube.",opts:["Hide data","Drill-down/Roll-up","Format text","Assign IP addresses"],ans:1,exp:"OLAP is used specifically to drill-down and roll-up in the generated data cube."},
+];
+
+const LECTURE_INFO = {
+  1: {title:"Data Mining Fundamentals & KDD", color:"var(--yellow-bright)"},
+  2: {title:"Data Science & Mining Tasks", color:"var(--green-bright)"},
+  3: {title:"Cluster Analysis", color:"var(--blue-bright)"},
+  4: {title:"Hierarchical Clustering Analysis", color:"var(--red-bright)"},
+  5: {title:"Fuzzy Logic", color:"var(--purple-bright)"},
+  6: {title:"Fuzzy Inference Systems", color:"var(--cyan-bright)"},
+  7: {title:"Genetic Algorithms", color:"var(--teal-bright)"},
+  8: {title:"Data Warehousing", color:"var(--pink-bright)"},
+  9: {title:"Data Warehouse Building", color:"var(--lime-bright)"},
+  10: {title:"Web Mining", color:"var(--orange-bright)"},
+};
+
+let selectedLecs = [];
+let quizQuestions = [];
+let currentIdx = 0;
+let score = 0;
+let answered = false;
+let timerInterval = null;
+let timerLeft = 0;
+let timerSec = 0;
+let quizStart = 0;
+let questionTimes = [];
+let qStart = 0;
+let results = [];
+let streak = 0;
+
+function buildHome() {
+  const grid = document.getElementById('lecture-grid');
+  grid.innerHTML = '';
+  const lecs = [...new Set(QUESTIONS.map(q=>q.lec))].sort((a,b)=>a-b);
+  lecs.forEach(lec => {
+    const count = QUESTIONS.filter(q=>q.lec===lec).length;
+    const info = LECTURE_INFO[lec];
+    const div = document.createElement('div');
+    div.className = 'lecture-card';
+    div.dataset.lec = lec;
+    div.innerHTML = `<span class="num" style="color:${info.color}">L${lec}</span>
+      <div class="lec-title">${info.title}</div>
+      <div class="q-count">${count} questions</div>`;
+    div.onclick = () => toggleLec(lec, div);
+    grid.appendChild(div);
+  });
+}
+
+function toggleLec(lec, card) {
+  const idx = selectedLecs.indexOf(lec);
+  if(idx === -1) {
+    selectedLecs.push(lec);
+    card.style.borderColor = LECTURE_INFO[lec].color;
+    card.style.background = 'rgba(240,237,228,0.1)';
+  } else {
+    selectedLecs.splice(idx, 1);
+    card.style.borderColor = '';
+    card.style.background = '';
+  }
+  updateSelectedLabel();
+}
+
+function selectAll() {
+  selectedLecs = [...new Set(QUESTIONS.map(q=>q.lec))];
+  document.querySelectorAll('.lecture-card').forEach(c => {
+    const lec = parseInt(c.dataset.lec);
+    c.style.borderColor = LECTURE_INFO[lec].color;
+    c.style.background = 'rgba(240,237,228,0.1)';
+  });
+  updateSelectedLabel();
+}
+
+function updateSelectedLabel() {
+  const lbl = document.getElementById('selected-label');
+  if(selectedLecs.length === 0) lbl.textContent = 'Select a lecture above, or mix all';
+  else lbl.textContent = `Selected: Lecture${selectedLecs.length>1?'s':''} ${selectedLecs.join(', ')}`;
+}
+
+function startQuiz() {
+  if(selectedLecs.length === 0) { selectAll(); }
+  let pool = QUESTIONS.filter(q => selectedLecs.includes(q.lec));
+  const order = document.getElementById('sel-order').value;
+  if(order === 'random') pool = pool.sort(() => Math.random() - 0.5);
+  const countSel = document.getElementById('sel-count').value;
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  quizQuestions = pool.slice(0, count);
+  timerSec = parseInt(document.getElementById('sel-timer').value);
+  currentIdx = 0; score = 0; answered = false; results = []; streak = 0;
+  quizStart = Date.now();
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQuestion() {
+  if(currentIdx >= quizQuestions.length) { showResult(); return; }
+  const q = quizQuestions[currentIdx];
+  answered = false;
+  document.getElementById('q-section-badge').textContent = q.sec || 'Section';
+  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('quiz-meta').textContent = `Question ${currentIdx+1} / ${quizQuestions.length}`;
+  document.getElementById('score-display').textContent = `Score: ${score}`;
+  document.getElementById('progress-fill').style.width = (currentIdx/quizQuestions.length*100)+'%';
+  document.getElementById('explanation-box').classList.remove('show');
+  document.getElementById('next-btn').disabled = true;
+  document.getElementById('streak-display').textContent = streak >= 3 ? `🔥 ${streak} streak!` : '';
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}.</span>${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  if(timerSec > 0) { startTimer(); }
+  else { document.getElementById('timer-display').textContent = ''; }
+
+  qStart = Date.now();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerLeft = timerSec;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerLeft--;
+    updateTimerDisplay();
+    if(timerLeft <= 0) {
+      clearInterval(timerInterval);
+      if(!answered) autoTimeout();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer-display');
+  el.textContent = timerLeft + 's';
+  el.className = 'timer-display' + (timerLeft <= 10 ? ' warn' : '');
+}
+
+function autoTimeout() {
+  answered = true;
+  const q = quizQuestions[currentIdx];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((b,i) => {
+    b.disabled = true;
+    if(i === q.ans) b.classList.add('reveal');
+  });
+  document.getElementById('explanation-text').textContent = '⏰ Time up! ' + q.exp;
+  document.getElementById('explanation-box').classList.add('show');
+  document.getElementById('next-btn').disabled = false;
+  streak = 0;
+  results.push({q:q, correct:false, chose:-1});
+  questionTimes.push((Date.now()-qStart)/1000);
+}
+
+function selectAnswer(chosen) {
+  if(answered) return;
+  clearInterval(timerInterval);
+  answered = true;
+  const q = quizQuestions[currentIdx];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const correct = chosen === q.ans;
+  btns[chosen].classList.add(correct ? 'correct' : 'wrong');
+  if(!correct) btns[q.ans].classList.add('reveal');
+
+  if(correct) { score++; streak++; }
+  else { streak = 0; }
+
+  document.getElementById('explanation-text').textContent = q.exp;
+  document.getElementById('explanation-box').classList.add('show');
+  document.getElementById('score-display').textContent = `Score: ${score}`;
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('streak-display').textContent = streak >= 3 ? `🔥 ${streak} streak!` : '';
+  results.push({q, correct, chose:chosen});
+  questionTimes.push((Date.now()-qStart)/1000);
+}
+
+function nextQuestion() {
+  currentIdx++;
+  renderQuestion();
+}
+
+function showResult() {
+  clearInterval(timerInterval);
+  const total = quizQuestions.length;
+  const pct = Math.round(score/total*100);
+  const grade = pct>=90?'A+':pct>=80?'A':pct>=70?'B':pct>=60?'C':pct>=50?'D':'F';
+  const gradeColors = {'A+':'var(--green-bright)','A':'var(--green-bright)','B':'var(--blue-bright)','C':'var(--yellow-bright)','D':'var(--orange-bright)','F':'var(--red-bright)'};
+  const msgs = {'A+':'Outstanding work! 🎓','A':'Excellent! 🌟','B':'Good job! 👏','C':'Keep studying! 📚','D':'More practice needed 💪','F':'Review the material again 📖'};
+  document.getElementById('result-grade').textContent = grade;
+  document.getElementById('result-grade').style.color = gradeColors[grade];
+  document.getElementById('result-message').textContent = msgs[grade];
+  document.getElementById('r-correct').textContent = score;
+  document.getElementById('r-wrong').textContent = total - score;
+  document.getElementById('r-pct').textContent = pct + '%';
+  const avgT = questionTimes.length ? Math.round(questionTimes.reduce((a,b)=>a+b,0)/questionTimes.length) : 0;
+  document.getElementById('r-time').textContent = avgT + 's';
+  document.getElementById('review-section').style.display = 'none';
+  showScreen('screen-result');
+}
+
+function showReview() {
+  const sec = document.getElementById('review-section');
+  if(sec.style.display !== 'none') { sec.style.display = 'none'; return; }
+  const letters = ['A','B','C','D'];
+  let html = '<div style="margin-top:1rem">';
+  results.forEach((r,i) => {
+    const icon = r.correct ? '<span class="tick-cross ok">✓</span>' : '<span class="tick-cross no">✗</span>';
+    const answerLine = r.correct ? `Correct: ${letters[r.q.ans]}. ${r.q.opts[r.q.ans]}`
+      : `Your answer: ${r.chose>=0?letters[r.chose]+'. '+r.q.opts[r.chose]:'Timed out'} | Correct: ${letters[r.q.ans]}. ${r.q.opts[r.q.ans]}`;
+    html += `<div class="review-item">${icon}<div class="review-q"><div>Q${i+1}: ${r.q.q}</div><div class="review-ans">${answerLine}</div></div></div>`;
+  });
+  html += '</div>';
+  sec.innerHTML = html;
+  sec.style.display = 'block';
+  sec.scrollIntoView({behavior:'smooth'});
+}
+
+function retryQuiz() {
+  currentIdx = 0; score = 0; answered = false; results = []; streak = 0; questionTimes = [];
+  quizQuestions = quizQuestions.sort(() => Math.random() - 0.5);
+  quizStart = Date.now();
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function goHome() {
+  clearInterval(timerInterval);
+  showScreen('screen-home');
+}
+
+buildHome();
+</script>
+</body>
+</html>
